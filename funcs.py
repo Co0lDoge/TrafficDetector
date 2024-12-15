@@ -20,7 +20,7 @@ def traffic_intensity(
     for cls_name, traveled_count in classwise_traveled_count.items():
         s += traveled_count * vehicle_size_coeffs.get(cls_name, 1)
 
-    return s / observation_time / SECS_IN_HOUR
+    return s / (observation_time / SECS_IN_HOUR)
     
 
 def vehicle_class_share(
