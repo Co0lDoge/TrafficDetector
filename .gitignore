@@ -1,5 +1,7 @@
 /model/*
 /video/*
+!/model/*add_model_here
+!/video/*add_video_here
 __pycache__
 .venv
 traffic-stats.xlsx
