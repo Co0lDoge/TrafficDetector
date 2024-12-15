@@ -1,0 +1,13 @@
+video-path = "video/test_720p.mp4"    # Любое разрешение и фреймрейт
+model-path = "model/yolov8s_1280_720.pt"
+sector-length = 0.1    # По моим расчетам. В километрах
+observation-time = 30    # Время наблюдения за сектором. В секундах
+lane-count = 1    # Кол-во полос
+# Желаемое разрешение видео
+target-width = 1280
+target-height = 720
+vehicle-classes = ["bus", "car", "motobike", "road_train", "truck"]
+# Расположение начального и конечного регионов
+regions = { "start" = [ [977, 553], [966, 573], [1025, 602], [1036, 581] ], "end" = [ [654, 391], [638, 412], [683, 436], [701, 415] ] }
+# Коэффиценты привидения
+vehicle-size-coeffs = { "car" = 1, "motorbike" = 0.5, "truck" = 1.8, "road_train" = 2.7, "bus" = 2.2 }

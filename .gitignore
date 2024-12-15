@@ -1,0 +1,5 @@
+/model/*
+/video/*
+__pycache__
+.venv
+traffic-stats.xlsx
