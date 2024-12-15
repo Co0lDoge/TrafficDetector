@@ -57,7 +57,7 @@ def traffic_density(
     observation_time: Seconds|float = SECS_IN_HOUR,
     lane_count: int = 1,
 ):
-    ti = traffic_intensity(classwise_traveled_count, vehicle_size_coeffs)
+    ti = traffic_intensity(classwise_traveled_count, vehicle_size_coeffs, observation_time)
     v = mean_vehicle_speed(vehicles_travel_time, sector_length)
 
     return ti / (lane_count * v)

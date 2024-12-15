@@ -91,6 +91,7 @@ class Sector:
             stats["Интенсивность траффика"].append(traffic_intensity(
                 classwise_traveled_count,
                 self.size_coeffs,
+                self.observation_period
             ))
 
             vehicles_travel_time = ids_travel_time.values()
@@ -101,7 +102,8 @@ class Sector:
                 classwise_traveled_count,
                 self.size_coeffs,
                 vehicles_travel_time,
-                self.length
+                self.length,
+                self.observation_period
             ))
 
         return pd.DataFrame(stats)
