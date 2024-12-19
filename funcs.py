@@ -20,7 +20,7 @@ def traffic_intensity(
     for cls_name, traveled_count in classwise_traveled_count.items():
         s += traveled_count * vehicle_size_coeffs.get(cls_name, 1)
 
-    return s / observation_time / SECS_IN_HOUR
+    return s / (observation_time / SECS_IN_HOUR)
     
 
 def vehicle_class_share(
@@ -57,7 +57,7 @@ def traffic_density(
     observation_time: Seconds|float = SECS_IN_HOUR,
     lane_count: int = 1,
 ):
-    ti = traffic_intensity(classwise_traveled_count, vehicle_size_coeffs)
+    ti = traffic_intensity(classwise_traveled_count, vehicle_size_coeffs, observation_time)
     v = mean_vehicle_speed(vehicles_travel_time, sector_length)
 
     return ti / (lane_count * v)
