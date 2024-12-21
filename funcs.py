@@ -12,7 +12,7 @@ SECS_IN_HOUR = 3600
 def traffic_intensity(
     classwise_traveled_count: dict[str, Seconds],
     vehicle_size_coeffs: dict[str, float],
-    observation_time: Seconds|float = SECS_IN_HOUR,
+    observation_time: Seconds|float,
 ) -> float:
     ''' Интенсивность движения транспортных средств (1 пункт) '''
 
@@ -54,8 +54,8 @@ def traffic_density(
     vehicle_size_coeffs: dict[str, float],
     vehicles_travel_time: Iterable[Seconds|float],
     sector_length: Kilometer,
-    observation_time: Seconds|float = SECS_IN_HOUR,
-    lane_count: int = 1,
+    observation_time: Seconds|float,
+    lane_count: int,
 ):
     ti = traffic_intensity(classwise_traveled_count, vehicle_size_coeffs, observation_time)
     v = mean_vehicle_speed(vehicles_travel_time, sector_length)

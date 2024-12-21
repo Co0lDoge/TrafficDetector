@@ -19,19 +19,10 @@ class Sector:
         lane_count: int,
         vehicle_classes: Sequence[str],
         timer,
-        observation_time: Secs = 3600,
-        vechicle_size_coeffs: dict[str, float] = None,
+        observation_time: Secs,
+        vechicle_size_coeffs: dict[str, float],
     ):
         self.size_coeffs = vechicle_size_coeffs
-        if vechicle_size_coeffs is None:
-            self.size_coeffs = {
-                "car": 1,
-                "motorbike": 0.5,
-                "truck": 1.8,
-                "road_train": 2.7,
-                "bus": 2.2,
-            }
-
         self.vehicle_classes = vehicle_classes
         self.length = length
         self.lane_count = lane_count
@@ -103,7 +94,8 @@ class Sector:
                 self.size_coeffs,
                 vehicles_travel_time,
                 self.length,
-                self.observation_period
+                self.observation_period,
+                lane_count=self.lane_count
             ))
 
         return pd.DataFrame(stats)
