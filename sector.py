@@ -94,7 +94,8 @@ class Sector:
                 self.size_coeffs,
                 vehicles_travel_time,
                 self.length,
-                self.observation_period
+                self.observation_period,
+                lane_count=self.lane_count
             ))
 
         return pd.DataFrame(stats)
