@@ -1,5 +1,6 @@
 /model/*
 /video/*
+/classwise_test/*
 !/model/*add_model_here
 !/video/*add_video_here
 __pycache__
