@@ -6,11 +6,28 @@ import os
 import time
 import pandas as pd
 import tomllib
+import argparse
 
 from sector import Sector
 from regions_counter import RegionsCounter
 from step_timer import StepTimer
 
+# Добавление аргументов запуска
+parser = argparse.ArgumentParser()
+parser.add_argument("--video-path", type=str, required=True, help="Путь к видео")
+parser.add_argument("--model-path", type=str, required=True, help="Путь к модельке")
+parser.add_argument("--output-path", type=str, required=True, help="Путь для выходного файлы")
+parser.add_argument("--report-path", type=str, required=True, help="Путь для выходного отчета")
+parser.add_argument("--regions", type=dict, required=True, help="Массив точек областей") # TODO: Проверить тип 
+
+# Получение всех аргументов
+args = parser.parse_args()
+
+# Доступ к аргументам
+video_path = args.video_path
+model_path = args.model_path
+output_path = args.output_path
+report_path = args.report_path
 
 def get_fps(cap) -> float|int:
     major_ver, _, _ = cv2.__version__.split('.')
