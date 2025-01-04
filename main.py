@@ -29,7 +29,7 @@ with open("settings.toml", "rb") as f:
     settings = tomllib.load(f)
 
 # Открываем видео
-cap = cv2.VideoCapture(settings["video-path"])
+cap = cv2.VideoCapture(video_path)
 
 frame_dt = 1/get_fps(cap)    # TODO подтягивать шаг кадра из файла
 timer = StepTimer(frame_dt)
@@ -42,12 +42,12 @@ sector = Sector(
     settings["observation-time"],
     settings["vehicle-size-coeffs"],
 )
-counter = RegionsCounter(settings["model-path"], regions=regions)
+counter = RegionsCounter(model_path, regions=regions)
 
 width, height = settings["target-width"], settings["target-height"]
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-output = cv2.VideoWriter("output/order-479.mp4", fourcc, get_fps(cap), (width, height))
+output = cv2.VideoWriter(output_path, fourcc, get_fps(cap), (width, height))
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -85,7 +85,7 @@ while cap.isOpened():
 
 stats = sector.traffic_stats()
 print(stats)
-stats.to_excel("output/traffic-stats.xlsx")
+stats.to_excel(report_path)
 
 # Освобождаем ресурсы
 cap.release()
