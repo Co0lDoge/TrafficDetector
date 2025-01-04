@@ -1,6 +1,7 @@
 /model/*
 /video/*
 /classwise_test/*
+/output/*
 !/model/*add_model_here
 !/video/*add_video_here
 __pycache__
@@ -8,3 +9,4 @@ __pycache__
 
 traffic-stats.xlsx
 order-479.mp4
+regions.json

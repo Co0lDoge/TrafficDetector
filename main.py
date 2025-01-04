@@ -7,6 +7,7 @@ import time
 import pandas as pd
 import tomllib
 import argparse
+import json
 
 from sector import Sector
 from regions_counter import RegionsCounter
@@ -18,10 +19,18 @@ parser.add_argument("--video-path", type=str, required=True, help="Путь к �
 parser.add_argument("--model-path", type=str, required=True, help="Путь к модельке")
 parser.add_argument("--output-path", type=str, required=True, help="Путь для выходного файлы")
 parser.add_argument("--report-path", type=str, required=True, help="Путь для выходного отчета")
-parser.add_argument("--regions", type=dict, required=True, help="Массив точек областей") # TODO: Проверить тип 
+parser.add_argument("--regions", type=str, required=True, help="Массив точек областей")
 
 # Получение всех аргументов
 args = parser.parse_args()
+
+# Парсинг регионов
+if args.regions:
+    with open(args.regions, 'r') as f:
+        regions = json.load(f)
+else:
+    regions = json.loads(args.regions)
+print(f"Regions: {regions}")
 
 # Доступ к аргументам
 video_path = args.video_path
@@ -62,7 +71,7 @@ counter = RegionsCounter(settings["model-path"], settings["regions"])
 width, height = settings["target-width"], settings["target-height"]
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-output = cv2.VideoWriter("order-479.mp4", fourcc, get_fps(cap), (width, height))
+output = cv2.VideoWriter("output/order-479.mp4", fourcc, get_fps(cap), (width, height))
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -100,7 +109,7 @@ while cap.isOpened():
 
 stats = sector.traffic_stats()
 print(stats)
-stats.to_excel("traffic-stats.xlsx")
+stats.to_excel("output/traffic-stats.xlsx")
 
 # Освобождаем ресурсы
 cap.release()
