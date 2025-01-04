@@ -1,10 +1,5 @@
 import cv2
-import numpy as np
-from ultralytics import YOLO, solutions
-from collections import defaultdict
 import os
-import time
-import pandas as pd
 import tomllib
 
 from args_loader import load_args
