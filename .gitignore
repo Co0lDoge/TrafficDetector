@@ -1,9 +1,10 @@
 /model/*
 /video/*
-!/model/*add_model_here
-!/video/*add_video_here
+/classwise_test/*
+/output/*
 __pycache__
 .venv
 
 traffic-stats.xlsx
 order-479.mp4
+regions.json

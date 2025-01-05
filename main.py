@@ -1,16 +1,11 @@
 import cv2
-import numpy as np
-from ultralytics import YOLO, solutions
-from collections import defaultdict
 import os
-import time
-import pandas as pd
 import tomllib
 
+from args_loader import load_args
 from sector import Sector
 from regions_counter import RegionsCounter
 from step_timer import StepTimer
-
 
 def get_fps(cap) -> float|int:
     major_ver, _, _ = cv2.__version__.split('.')
@@ -21,13 +16,15 @@ def get_fps(cap) -> float|int:
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
+video_path, model_path, output_path, report_path, regions = load_args()
+
 # Подгружаем данные из TOML файла.
 # Надеюсь Гуидо ван Россум простит меня за это.
 with open("settings.toml", "rb") as f:
     settings = tomllib.load(f)
 
 # Открываем видео
-cap = cv2.VideoCapture(settings["video-path"])
+cap = cv2.VideoCapture(video_path)
 
 frame_dt = 1/get_fps(cap)    # TODO подтягивать шаг кадра из файла
 timer = StepTimer(frame_dt)
@@ -40,12 +37,12 @@ sector = Sector(
     settings["observation-time"],
     settings["vehicle-size-coeffs"],
 )
-counter = RegionsCounter(settings["model-path"], settings["regions"])
+counter = RegionsCounter(model_path, regions=regions)
 
 width, height = settings["target-width"], settings["target-height"]
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-output = cv2.VideoWriter("order-479.mp4", fourcc, get_fps(cap), (width, height))
+output = cv2.VideoWriter(output_path, fourcc, get_fps(cap), (width, height))
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -83,7 +80,7 @@ while cap.isOpened():
 
 stats = sector.traffic_stats()
 print(stats)
-stats.to_excel("traffic-stats.xlsx")
+stats.to_excel(report_path)
 
 # Освобождаем ресурсы
 cap.release()
