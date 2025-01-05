@@ -2,8 +2,6 @@
 /video/*
 /classwise_test/*
 /output/*
-!/model/*add_model_here
-!/video/*add_video_here
 __pycache__
 .venv
 
