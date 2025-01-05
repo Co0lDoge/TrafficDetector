@@ -1,5 +1,7 @@
 video-path = "video/test_720p.mp4"    # Любое разрешение и фреймрейт
 model-path = "model/yolov8s_1280_720.pt"
+output-path = "output/order-479.mp4"
+report-path = "output/traffic-stats.xlsx"
 sector-length = 0.1    # По моим расчетам. В километрах
 observation-time = 30    # Время наблюдения за сектором. В секундах
 lane-count = 1    # Кол-во полос

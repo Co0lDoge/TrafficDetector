@@ -45,7 +45,7 @@ counter = RegionsCounter(settings["model-path"], settings["regions"])
 width, height = settings["target-width"], settings["target-height"]
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-output = cv2.VideoWriter("order-479.mp4", fourcc, get_fps(cap), (width, height))
+output = cv2.VideoWriter(settings["output-path"], fourcc, get_fps(cap), (width, height))
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -83,7 +83,7 @@ while cap.isOpened():
 
 stats = sector.traffic_stats()
 print(stats)
-stats.to_excel("traffic-stats.xlsx")
+stats.to_excel(settings["report-path"])
 
 # Освобождаем ресурсы
 cap.release()
