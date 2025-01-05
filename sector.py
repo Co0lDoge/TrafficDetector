@@ -99,3 +99,11 @@ class Sector:
             ))
 
         return pd.DataFrame(stats)
+    
+    def classwise_stats(self) -> pd.DataFrame:
+        stats = {cls: [] for cls in self.vehicle_classes}
+        for ids_travel_time, classwise_traveled_count in self.periods_data:
+            for cls in self.vehicle_classes:
+                stats[cls].append(classwise_traveled_count[cls])
+
+        return pd.DataFrame(stats)

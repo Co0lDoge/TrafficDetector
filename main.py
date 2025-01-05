@@ -1,6 +1,7 @@
 import cv2
 import os
 import tomllib
+import pandas as pd
 
 from args_loader import load_args
 from sector import Sector
@@ -78,9 +79,13 @@ while cap.isOpened():
         sector.new_period()
         break
 
-stats = sector.traffic_stats()
-print(stats)
-stats.to_excel(report_path)
+traffic_stats = sector.traffic_stats()
+classwise_stats = sector.classwise_stats()
+print(traffic_stats)
+print(classwise_stats)
+
+merged_stats = pd.concat([traffic_stats, classwise_stats], axis=1)
+merged_stats.to_excel(report_path)
 
 # Освобождаем ресурсы
 cap.release()
