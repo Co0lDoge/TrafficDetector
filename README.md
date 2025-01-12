@@ -1,4 +1,5 @@
 ## Установка зависимостей
+Рекомендуемая версия python: 3.11.9
 ```sh
 pip install -r requirements.txt
 ```
