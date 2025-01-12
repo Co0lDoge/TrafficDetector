@@ -45,6 +45,8 @@ width, height = settings["target-width"], settings["target-height"]
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 output = cv2.VideoWriter(output_path, fourcc, get_fps(cap), (width, height))
 
+# Флаг для генерации последнего отчета
+generate_report = True  
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
@@ -76,13 +78,14 @@ while cap.isOpened():
     output.write(frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
+        generate_report = False
         sector.new_period()
         break
 
 # Генерация отчета за последний период
-# TODO: использовать время из таймера, так как могло пройти меньше времени, чем observation-time
 # TODO: не генерировать, если нажато q
-sector.new_period()
+if generate_report:
+    sector.new_period()
 
 traffic_stats = sector.traffic_stats()
 classwise_stats = sector.classwise_stats()
