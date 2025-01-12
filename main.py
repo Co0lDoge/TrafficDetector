@@ -79,6 +79,11 @@ while cap.isOpened():
         sector.new_period()
         break
 
+# Генерация отчета за последний период
+# TODO: использовать время из таймера, так как могло пройти меньше времени, чем observation-time
+# TODO: не генерировать, если нажато q
+sector.new_period()
+
 traffic_stats = sector.traffic_stats()
 classwise_stats = sector.classwise_stats()
 print(traffic_stats)
