@@ -1,10 +1,11 @@
 import time
-from typing import Sequence, Final
+from typing import Sequence, Final, List
 
 import pandas as pd
 from ultralytics.solutions import ObjectCounter
 
 from funcs import *
+from period import Period
 
 Hour = float
 Secs = float
@@ -28,7 +29,7 @@ class Sector:
         self.lane_count = lane_count
 
         self.observation_period: Secs = observation_time
-        self.periods_data = []
+        self.periods_data: List[Period] = []
 
         self.period_timer = timer
         self.ids_travel_time = {}
@@ -62,10 +63,11 @@ class Sector:
                     self.ids_blacklist.remove(vid)
 
     def new_period(self):
-        self.periods_data.append([
+        self.periods_data.append(Period(
             self.ids_travel_time.copy(),
             self.classwise_traveled_count.copy(),
-        ])
+            self.period_timer.time
+        ))
 
         self.period_timer.reset()
         self.ids_travel_time.clear()
@@ -76,21 +78,22 @@ class Sector:
             "Интенсивность траффика": [],
             "Среднее время проезда": [],
             "Средняя скорость движения": [],
-            "Плотность траффика": []
+            "Плотность траффика": [],
+            "Время наблюдения": []
         }
-        for ids_travel_time, classwise_traveled_count in self.periods_data:
+        for period in self.periods_data:
             stats["Интенсивность траффика"].append(traffic_intensity(
-                classwise_traveled_count,
+                period.classwise_traveled_count,
                 self.size_coeffs,
                 self.observation_period
             ))
 
-            vehicles_travel_time = ids_travel_time.values()
+            vehicles_travel_time = period.ids_travel_time.values()
             stats["Среднее время проезда"].append(mean_travel_time(vehicles_travel_time))
             stats["Средняя скорость движения"].append(mean_vehicle_speed(vehicles_travel_time, self.length))
 
             stats["Плотность траффика"].append(traffic_density(
-                classwise_traveled_count,
+                period.classwise_traveled_count,
                 self.size_coeffs,
                 vehicles_travel_time,
                 self.length,
@@ -98,12 +101,14 @@ class Sector:
                 lane_count=self.lane_count
             ))
 
+            stats["Время наблюдения"].append(period.observation_time)
+
         return pd.DataFrame(stats)
     
     def classwise_stats(self) -> pd.DataFrame:
         stats = {cls: [] for cls in self.vehicle_classes}
-        for ids_travel_time, classwise_traveled_count in self.periods_data:
+        for period in self.periods_data:
             for cls in self.vehicle_classes:
-                stats[cls].append(classwise_traveled_count[cls])
+                stats[cls].append(period.classwise_traveled_count[cls])
 
         return pd.DataFrame(stats)
