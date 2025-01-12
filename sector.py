@@ -85,7 +85,7 @@ class Sector:
             stats["Интенсивность траффика"].append(traffic_intensity(
                 period.classwise_traveled_count,
                 self.size_coeffs,
-                self.observation_period
+                period.observation_time
             ))
 
             vehicles_travel_time = period.ids_travel_time.values()
@@ -97,7 +97,7 @@ class Sector:
                 self.size_coeffs,
                 vehicles_travel_time,
                 self.length,
-                self.observation_period,
+                period.observation_time,
                 lane_count=self.lane_count
             ))
 
