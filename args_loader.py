@@ -1,5 +1,6 @@
 import argparse
 import json
+import numpy as np
 
 def load_args():
     # Добавление аргументов запуска
@@ -26,11 +27,12 @@ def load_args():
     model_path = args.model_path
     output_path = args.output_path
     report_path = args.report_path
-    regions = region_adapt(list_region)
+    list_region = list_region
 
-    return video_path, model_path, output_path, report_path, regions
+    return video_path, model_path, output_path, report_path, list_region
 
-def region_adapt(regions):
+def region_adapt(regions, video_width, required_width):
+    coeff = video_width / required_width
     adapted = {}
     
     for idx, region in enumerate(regions):
@@ -38,7 +40,7 @@ def region_adapt(regions):
         coordinates = region['coordinates']
         
         # Преобразование к int, так как openCV не берет float
-        points = [[int(coord['x']), int(coord['y'])] for coord in coordinates]
+        points = (np.array([[coord['x'], coord['y']] for coord in coordinates]) / coeff).astype(int).tolist()
         
         # Первый регион - начало, последний - конец, остальные - middle_X
         if idx == 0:
