@@ -27,9 +27,9 @@ class Region:
 
 
 class RegionsCounter:
-    def __init__(self, model, regions: dict):
+    def __init__(self, model, regions_points: list[list[int]]):
         self.model = YOLO(model)
-        self.regions = {name:Region(points, self.model.names.values()) for name, points in regions.items()}
+        self.regions = {Region(points, self.model.names.values()) for points in regions_points}
     
     def count(self, im0, *, annotate=False, draw_regions=True):
         results = self.model.track(im0, persist=True)
@@ -46,7 +46,7 @@ class RegionsCounter:
                 if annotate:
                     _annotate(im0, annotator, box, track_id, cls_name)
 
-                for region in self.regions.values():
+                for region in self.regions:
                     bbox_center = int((box[0] + box[2]) / 2), int((box[1] + box[3]) / 2)
                     crossed_before = track_id in region.counted_ids
                     cls_name = self.model.names[cls_name]
@@ -58,7 +58,7 @@ class RegionsCounter:
                         region.counted_ids.pop(track_id, None)
 
         if draw_regions:
-            for region in self.regions.values():
+            for region in self.regions:
                 for i in range(len(region.points)):
                     cv2.line(
                         im0,

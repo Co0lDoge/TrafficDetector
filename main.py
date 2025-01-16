@@ -3,7 +3,7 @@ import os
 import tomllib
 import pandas as pd
 
-from args_loader import load_args, region_adapt
+from args_loader import load_args, get_adapted_region_points
 from sector import Sector
 from regions_counter import RegionsCounter
 from step_timer import StepTimer
@@ -41,8 +41,8 @@ sector = Sector(
 video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 width, height = settings["target-width"], settings["target-height"]
 
-regions = region_adapt(list_region, video_width, width)
-counter = RegionsCounter(model_path, regions=regions)
+regions = get_adapted_region_points(list_region, video_width, width)
+counter = RegionsCounter(model_path, regions_points=regions)
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 output = cv2.VideoWriter(output_path, fourcc, get_fps(cap), (width, height))
