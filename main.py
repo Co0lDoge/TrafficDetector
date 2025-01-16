@@ -61,7 +61,7 @@ while cap.isOpened():
 
     cv2.putText(
         frame,
-        f"{sector.classwise_traveled_count}",
+        f"{sector.sectors[0].classwise_traveled_count}",
         (10, 200),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,

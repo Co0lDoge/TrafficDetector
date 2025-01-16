@@ -12,10 +12,10 @@ Kilometer = float
 SECS_IN_HOUR: Final = 3600
 
 class Sector:
-    def __init__(self):
+    def __init__(self, vehicle_classes):
         self.periods_data: List[Period] = []
         self.ids_travel_time = {}
-        self.classwise_traveled_count = {cls:0 for cls in self.vehicle_classes}
+        self.classwise_traveled_count = {cls:0 for cls in vehicle_classes}
         self.ids_start_time = {}
         self.ids_blacklist = set()
         self.travelling_ids = {}
@@ -23,7 +23,7 @@ class Sector:
 class Sector_Cluster:
     def __init__(
         self,
-        length: Kilometer,
+        length: int, # Длина сектора в километрах
         lane_count: int,
         vehicle_classes: Sequence[str],
         timer,
@@ -35,58 +35,55 @@ class Sector_Cluster:
         self.vehicle_classes = vehicle_classes
         self.length = length
         self.lane_count = lane_count
+        self.len_sector = region_count//2 # Сектор - пространство между двумя регионами
 
         self.observation_period: Secs = observation_time
         self.period_timer = timer
-
-        # TODO: заменить на секторы
-        self.periods_data: List[Period] = []
-        self.ids_travel_time = {}
-        self.classwise_traveled_count = {cls:0 for cls in self.vehicle_classes}
-        self.ids_start_time = {}
-        self.ids_blacklist = set()
-        self.travelling_ids = {}
-
-        #self.sectors = [Sector() for _ in range(region_count//2)]
+        
+        self.sectors = [Sector(self.vehicle_classes) for _ in range(self.len_sector)]   
 
     def update(self, regions: List[ObjectCounter]):
         self.period_timer.step_forward()
         if self.period_timer.time >= self.observation_period:
             self.new_period()
 
-        # TODO: заменить на цикл по секторам
-        start_counter = regions[0]
-        end_counter = regions[1]
+        iter_region = iter(regions)
+        iter_sector = iter(self.sectors)
+        for _ in range(2, self.len_sector, 2):
+            start_counter = next(iter_region)
+            end_counter = next(iter_region)
+            sector = next(iter_sector)
 
-        for vid in start_counter.counted_ids:
-            if vid not in self.ids_start_time and vid not in self.ids_blacklist:
-                self.ids_start_time[vid] = self.period_timer.unresettable_time    # TODO да простит меня бог (не простит)
+            for vid in start_counter.counted_ids:
+                if vid not in sector.ids_start_time and vid not in sector.ids_blacklist:
+                    sector.ids_start_time[vid] = self.period_timer.unresettable_time    # TODO да простит меня бог (не простит)
 
-        for vid in end_counter.counted_ids:
-            try:
-                if vid not in self.ids_blacklist:
-                    dt = self.period_timer.unresettable_time - self.ids_start_time[vid]
-                    self.ids_start_time.pop(vid)
+            for vid in end_counter.counted_ids:
+                try:
+                    if vid not in sector.ids_blacklist:
+                        dt = self.period_timer.unresettable_time - sector.ids_start_time[vid]
+                        sector.ids_start_time.pop(vid)
 
-                    self.ids_travel_time[vid] = dt
+                        sector.ids_travel_time[vid] = dt
 
-                    cls_name = end_counter.counted_ids[vid].cls_name
-                    self.classwise_traveled_count[cls_name] += 1
-                    self.ids_blacklist.add(vid)
-            except KeyError:
-                if vid in self.ids_blacklist:
-                    self.ids_blacklist.remove(vid)
+                        cls_name = end_counter.counted_ids[vid].cls_name
+                        sector.classwise_traveled_count[cls_name] += 1
+                        sector.ids_blacklist.add(vid)
+                except KeyError:
+                    if vid in sector.ids_blacklist:
+                        sector.ids_blacklist.remove(vid)
 
     def new_period(self):
-        self.periods_data.append(Period(
-            self.ids_travel_time.copy(),
-            self.classwise_traveled_count.copy(),
-            self.period_timer.time
-        ))
+        for sector in self.sectors:
+            sector.periods_data.append(Period(
+                sector.ids_travel_time.copy(),
+                sector.classwise_traveled_count.copy(),
+                self.period_timer.time
+            ))
 
-        self.period_timer.reset()
-        self.ids_travel_time.clear()
-        self.classwise_traveled_count = {cls:0 for cls in self.vehicle_classes}
+            self.period_timer.reset()
+            sector.ids_travel_time.clear()
+            sector.classwise_traveled_count = {cls:0 for cls in self.vehicle_classes}
 
     def traffic_stats(self) -> pd.DataFrame:
         stats = {
@@ -96,7 +93,7 @@ class Sector_Cluster:
             "Плотность траффика": [],
             "Время наблюдения": []
         }
-        for period in self.periods_data:
+        for period in self.sectors[0].periods_data:
             stats["Интенсивность траффика"].append(traffic_intensity(
                 period.classwise_traveled_count,
                 self.size_coeffs,
@@ -122,7 +119,7 @@ class Sector_Cluster:
     
     def classwise_stats(self) -> pd.DataFrame:
         stats = {cls: [] for cls in self.vehicle_classes}
-        for period in self.periods_data:
+        for period in self.sectors[0].periods_data:
             for cls in self.vehicle_classes:
                 stats[cls].append(period.classwise_traveled_count[cls])
 
