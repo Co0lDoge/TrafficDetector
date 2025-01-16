@@ -49,11 +49,11 @@ class SectorCluster:
 
         iter_region = iter(regions)
         iter_sector = iter(self.sectors)
-        for _ in range(0, self.len_sector+1, 2):
+        for _ in range(self.len_sector):
             start_counter = next(iter_region)
             end_counter = next(iter_region)
             sector = next(iter_sector)
-            print(sector.classwise_traveled_count)
+            #print(sector.classwise_traveled_count)
 
             for vid in start_counter.counted_ids:
                 if vid not in sector.ids_start_time and vid not in sector.ids_blacklist:
