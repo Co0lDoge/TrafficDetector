@@ -56,7 +56,7 @@ while cap.isOpened():
 
     frame = cv2.resize(frame, (width, height))
     counter.count(frame, annotate=True)
-    sector.update(counter.regions["start"], counter.regions["end"])
+    sector.update(counter.regions[0], counter.regions[1])
 
     cv2.putText(
         frame,

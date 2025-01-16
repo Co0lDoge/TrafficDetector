@@ -29,7 +29,7 @@ class Region:
 class RegionsCounter:
     def __init__(self, model, regions_points: list[list[int]]):
         self.model = YOLO(model)
-        self.regions = {Region(points, self.model.names.values()) for points in regions_points}
+        self.regions = [Region(points, self.model.names.values()) for points in regions_points]
     
     def count(self, im0, *, annotate=False, draw_regions=True):
         results = self.model.track(im0, persist=True)
