@@ -49,14 +49,15 @@ class SectorCluster:
 
         iter_region = iter(regions)
         iter_sector = iter(self.sectors)
-        for _ in range(0, self.len_sector, 2):
+        for _ in range(0, self.len_sector+1, 2):
             start_counter = next(iter_region)
             end_counter = next(iter_region)
             sector = next(iter_sector)
+            print(sector.classwise_traveled_count)
 
             for vid in start_counter.counted_ids:
                 if vid not in sector.ids_start_time and vid not in sector.ids_blacklist:
-                    sector.ids_start_time[vid] = self.period_timer.unresettable_time    # TODO да простит меня бог (не простит)
+                    sector.ids_start_time[vid] = self.period_timer.unresettable_time
 
             for vid in end_counter.counted_ids:
                 try:
@@ -81,9 +82,9 @@ class SectorCluster:
                 self.period_timer.time
             ))
 
-            self.period_timer.reset()
             sector.ids_travel_time.clear()
             sector.classwise_traveled_count = {cls:0 for cls in self.vehicle_classes}
+        self.period_timer.reset()
 
     def traffic_stats(self) -> pd.DataFrame:
         stats = {
