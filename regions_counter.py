@@ -42,14 +42,14 @@ class RegionsCounter:
             if annotate:
                 annotator = Annotator(im0, line_width=1, example=str(self.model.names))
 
-            for box, track_id, cls_name in zip(boxes, track_ids, clss):
+            for box, track_id, cls in zip(boxes, track_ids, clss):
                 if annotate:
-                    _annotate(im0, annotator, box, track_id, cls_name)
+                    _annotate(im0, annotator, box, track_id, cls)
 
                 for region in self.regions.values():
                     bbox_center = int((box[0] + box[2]) / 2), int((box[1] + box[3]) / 2)
                     crossed_before = track_id in region.counted_ids
-                    cls_name = self.model.names[cls_name]
+                    cls_name = self.model.names[cls]
 
                     if is_inside_zone(bbox_center, region.points) and not crossed_before:
                         region.classwise_count[cls_name] += 1
