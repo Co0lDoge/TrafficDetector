@@ -49,7 +49,7 @@ class Sector_Cluster:
 
         iter_region = iter(regions)
         iter_sector = iter(self.sectors)
-        for _ in range(2, self.len_sector, 2):
+        for _ in range(0, self.len_sector, 2):
             start_counter = next(iter_region)
             end_counter = next(iter_region)
             sector = next(iter_sector)
