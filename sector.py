@@ -20,7 +20,7 @@ class Sector:
         self.ids_blacklist = set()
         self.travelling_ids = {}
 
-class Sector_Cluster:
+class SectorCluster:
     def __init__(
         self,
         length: int, # Длина сектора в километрах
