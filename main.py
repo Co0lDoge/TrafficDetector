@@ -4,7 +4,7 @@ import tomllib
 import pandas as pd
 
 from args_loader import load_args, get_adapted_region_points
-from sector import Sector
+from sector import Sector_Cluster
 from regions_counter import RegionsCounter
 from step_timer import StepTimer
 
@@ -30,13 +30,14 @@ cap = cv2.VideoCapture(video_path)
 frame_dt = 1/get_fps(cap)    # TODO подтягивать шаг кадра из файла
 timer = StepTimer(frame_dt)
 
-sector = Sector(
+sector = Sector_Cluster(
     settings["sector-length"],
     settings["lane-count"],
     settings["vehicle-classes"],
     timer,
     settings["observation-time"],
     settings["vehicle-size-coeffs"],
+    len(list_region)
 )
 video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 width, height = settings["target-width"], settings["target-height"]
@@ -56,7 +57,7 @@ while cap.isOpened():
 
     frame = cv2.resize(frame, (width, height))
     counter.count(frame, annotate=True)
-    sector.update(counter.regions[0], counter.regions[1])
+    sector.update(counter.regions)
 
     cv2.putText(
         frame,

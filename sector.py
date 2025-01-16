@@ -1,4 +1,3 @@
-import time
 from typing import Sequence, Final, List
 
 import pandas as pd
@@ -12,8 +11,16 @@ Secs = float
 Kilometer = float
 SECS_IN_HOUR: Final = 3600
 
-
 class Sector:
+    def __init__(self):
+        self.periods_data: List[Period] = []
+        self.ids_travel_time = {}
+        self.classwise_traveled_count = {cls:0 for cls in self.vehicle_classes}
+        self.ids_start_time = {}
+        self.ids_blacklist = set()
+        self.travelling_ids = {}
+
+class Sector_Cluster:
     def __init__(
         self,
         length: Kilometer,
@@ -22,6 +29,7 @@ class Sector:
         timer,
         observation_time: Secs,
         vechicle_size_coeffs: dict[str, float],
+        region_count: int
     ):
         self.size_coeffs = vechicle_size_coeffs
         self.vehicle_classes = vehicle_classes
@@ -29,23 +37,30 @@ class Sector:
         self.lane_count = lane_count
 
         self.observation_period: Secs = observation_time
-        self.periods_data: List[Period] = []
-
         self.period_timer = timer
+
+        # TODO: заменить на секторы
+        self.periods_data: List[Period] = []
         self.ids_travel_time = {}
         self.classwise_traveled_count = {cls:0 for cls in self.vehicle_classes}
         self.ids_start_time = {}
         self.ids_blacklist = set()
         self.travelling_ids = {}
 
-    def update(self, start_counter: ObjectCounter, end_counter: ObjectCounter):
+        #self.sectors = [Sector() for _ in range(region_count//2)]
+
+    def update(self, regions: List[ObjectCounter]):
         self.period_timer.step_forward()
         if self.period_timer.time >= self.observation_period:
             self.new_period()
 
+        # TODO: заменить на цикл по секторам
+        start_counter = regions[0]
+        end_counter = regions[1]
+
         for vid in start_counter.counted_ids:
             if vid not in self.ids_start_time and vid not in self.ids_blacklist:
-                self.ids_start_time[vid] = self.period_timer.unresettable_time    # TODO да простит меня бог
+                self.ids_start_time[vid] = self.period_timer.unresettable_time    # TODO да простит меня бог (не простит)
 
         for vid in end_counter.counted_ids:
             try:
