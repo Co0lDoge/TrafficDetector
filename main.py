@@ -67,9 +67,6 @@ sector = SectorCluster(
     len(list_region)
 )
 
-# Флаг для генерации последнего отчета
-generate_report = True
-
 # Начало обработки видео
 logging.info("Начало обработки видео...")
 while cap.isOpened():
@@ -103,14 +100,9 @@ while cap.isOpened():
     output.write(frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
-        generate_report = False
-        sector.new_period()
         break
 
-# Генерация отчета за последний период
-# TODO: не генерировать, если нажато q
-if generate_report:
-    sector.new_period()
+sector.new_period()
 
 # TODO: Максим: сделать генерацию отчета за все периоды
 traffic_stats = sector.traffic_stats()
