@@ -90,6 +90,7 @@ while cap.isOpened():
 if generate_report:
     sector.new_period()
 
+# TODO: Максим: сделать генерацию отчета за все периоды
 traffic_stats = sector.traffic_stats()
 classwise_stats = sector.classwise_stats()
 print(traffic_stats)

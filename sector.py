@@ -47,6 +47,7 @@ class SectorCluster:
         if self.period_timer.time >= self.observation_period:
             self.new_period()
 
+        # Итерация по секторам и регионам, каждому сектору соответствует два региона
         iter_region = iter(regions)
         iter_sector = iter(self.sectors)
         for _ in range(self.len_sector):
@@ -94,6 +95,8 @@ class SectorCluster:
             "Плотность траффика": [],
             "Время наблюдения": []
         }
+
+        # TODO: Максим: сделать генерацию отчета за все периоды
         for period in self.sectors[0].periods_data:
             stats["Интенсивность траффика"].append(traffic_intensity(
                 period.classwise_traveled_count,
@@ -120,6 +123,8 @@ class SectorCluster:
     
     def classwise_stats(self) -> pd.DataFrame:
         stats = {cls: [] for cls in self.vehicle_classes}
+
+        # TODO: Максим: сделать генерацию отчета за все периоды
         for period in self.sectors[0].periods_data:
             for cls in self.vehicle_classes:
                 stats[cls].append(period.classwise_traveled_count[cls])
