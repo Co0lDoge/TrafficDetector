@@ -11,7 +11,7 @@ from step_timer import StepTimer
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
+    format="%(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler()
     ]
@@ -45,6 +45,7 @@ else:
         logging.info(f"Частота кадров видеофайла: {fps:.2f} FPS")
     else:
         logging.warning("Частота кадров не может быть определена.")
+logging.info(f"Загруженные настройки: {settings}")
 
 video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 width, height = settings["target-width"], settings["target-height"]
@@ -76,7 +77,9 @@ while cap.isOpened():
 
     frame = cv2.resize(frame, (width, height))
     counter.count(frame, annotate=True)
+    logging.info(f"Обработан кадр по времени {timer.time}")
     sector.update(counter.regions)
+    logging.info(f"Обновлены сектора по времени {sector.period_timer.time}")
 
     cv2.putText(
         frame,
@@ -103,17 +106,22 @@ while cap.isOpened():
         break
 
 sector.new_period()
+logging.info("Обработка видео завершена.")
 
 # TODO: Максим: сделать генерацию отчета за все периоды
 traffic_stats = sector.traffic_stats()
 classwise_stats = sector.classwise_stats()
+logging.info("Созданы датафреймы со статистикой.")
 print(traffic_stats)
 print(classwise_stats)
 
 merged_stats = pd.concat([traffic_stats, classwise_stats], axis=1)
 merged_stats.to_excel(report_path)
+logging.info(f"Отчет сохранен в {report_path}")
 
 # Освобождаем ресурсы
 cap.release()
 output.release()
 cv2.destroyAllWindows()
+
+logging.info(f"Видеофайл сохранён в {output_path}")
