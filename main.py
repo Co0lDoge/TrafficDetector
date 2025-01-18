@@ -2,18 +2,26 @@ import cv2
 import os
 import tomllib
 import pandas as pd
+import logging
 
 from args_loader import load_args, get_adapted_region_points
 from sector import SectorCluster
 from regions_counter import RegionsCounter
 from step_timer import StepTimer
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+
 def get_fps(cap) -> float|int:
     major_ver, _, _ = cv2.__version__.split('.')
     if int(major_ver) >= 3:
         return cap.get(cv2.CAP_PROP_FPS)
     return cap.get(cv2.cv.CV_CAP_PROP_FPS)
-
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
@@ -27,8 +35,27 @@ with open("settings.toml", "rb") as f:
 # Открываем видео
 cap = cv2.VideoCapture(video_path)
 
-frame_dt = 1/get_fps(cap)    # TODO подтягивать шаг кадра из файла
+if not cap.isOpened():
+    logging.error(f"Не удалось открыть видеофайл {video_path}")
+    quit()
+else:
+    logging.info(f"Видеофайл открыт успешно: {video_path}")
+    fps = get_fps(cap)
+    if fps > 0:
+        logging.info(f"Частота кадров видеофайла: {fps:.2f} FPS")
+    else:
+        logging.warning("Частота кадров не может быть определена.")
+
+video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+width, height = settings["target-width"], settings["target-height"]
+
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+output = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+frame_dt = 1/fps    # TODO подтягивать шаг кадра из файла
 timer = StepTimer(frame_dt)
+regions = get_adapted_region_points(list_region, video_width, width)
+counter = RegionsCounter(model_path, regions_points=regions)
 
 sector = SectorCluster(
     settings["sector-length"],
@@ -39,17 +66,12 @@ sector = SectorCluster(
     settings["vehicle-size-coeffs"],
     len(list_region)
 )
-video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-width, height = settings["target-width"], settings["target-height"]
-
-regions = get_adapted_region_points(list_region, video_width, width)
-counter = RegionsCounter(model_path, regions_points=regions)
-
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-output = cv2.VideoWriter(output_path, fourcc, get_fps(cap), (width, height))
 
 # Флаг для генерации последнего отчета
-generate_report = True  
+generate_report = True
+
+# Начало обработки видео
+logging.info("Начало обработки видео...")
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
