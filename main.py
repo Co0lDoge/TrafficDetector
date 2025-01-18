@@ -99,7 +99,6 @@ while cap.isOpened():
     )
 
     # Показ текущего кадра
-    cv2.imshow("Crossroad Monitoring", frame)
     output.write(frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
