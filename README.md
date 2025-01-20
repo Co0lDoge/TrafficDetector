@@ -27,3 +27,7 @@ python main.py
 --report-path output/traffic-stats.xlsx 
 --regions regions.json
 ```
+## При использовании модели OpenVINO путь необходимо указывать к директории со всеми файлами модели
+```sh
+--model-path model/yolov10s_openvino_model/
+```
