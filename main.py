@@ -56,7 +56,7 @@ output = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 frame_dt = 1/fps    # TODO подтягивать шаг кадра из файла
 timer = StepTimer(frame_dt)
 regions = get_adapted_region_points(list_region, video_width, width)
-counter = RegionsCounter(model_path, regions_points=regions)
+counter = RegionsCounter(model_path, imgsz=(width, height), regions_points=regions)
 
 sector = SectorCluster(
     settings["sector-length"],
