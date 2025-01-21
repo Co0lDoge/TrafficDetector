@@ -2,13 +2,15 @@ import cv2
 import os
 import tomllib
 import pandas as pd
+from pandas.io.excel import ExcelWriter
 
 from args_loader import load_args, get_adapted_region_points
 from sector import SectorCluster
 from regions_counter import RegionsCounter
 from step_timer import StepTimer
 
-def get_fps(cap) -> float|int:
+
+def get_fps(cap) -> float | int:
     major_ver, _, _ = cv2.__version__.split('.')
     if int(major_ver) >= 3:
         return cap.get(cv2.CAP_PROP_FPS)
@@ -27,7 +29,7 @@ with open("settings.toml", "rb") as f:
 # Открываем видео
 cap = cv2.VideoCapture(video_path)
 
-frame_dt = 1/get_fps(cap)    # TODO подтягивать шаг кадра из файла
+frame_dt = 1 / get_fps(cap)  # TODO подтягивать шаг кадра из файла
 timer = StepTimer(frame_dt)
 
 sector = SectorCluster(
@@ -49,7 +51,7 @@ fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 output = cv2.VideoWriter(output_path, fourcc, get_fps(cap), (width, height))
 
 # Флаг для генерации последнего отчета
-generate_report = True  
+generate_report = True
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
@@ -93,11 +95,27 @@ if generate_report:
 # TODO: Максим: сделать генерацию отчета за все периоды
 traffic_stats = sector.traffic_stats()
 classwise_stats = sector.classwise_stats()
-print(traffic_stats)
-print(classwise_stats)
 
-merged_stats = pd.concat([traffic_stats, classwise_stats], axis=1)
-merged_stats.to_excel(report_path)
+res_dataframes = []
+i = 1
+for traf_stat, class_stat in zip(traffic_stats, classwise_stats):
+    df_res_tmp = pd.concat([traf_stat, class_stat], axis=1)
+    res_dataframes.append(df_res_tmp)
+
+    print("*********************")
+    print(f"Sector #{i}")
+    print(df_res_tmp)
+    i += 1
+
+# print(classwise_stats)
+# merged_stats = pd.concat([traffic_stats, classwise_stats], axis=1)
+# merged_stats.to_excel(report_path)
+
+# Запись данных в файл
+with ExcelWriter(report_path) as writer:
+    for ind, df in enumerate(res_dataframes):
+        df.to_excel(writer, sheet_name=f"{ind + 1}")
+
 
 # Освобождаем ресурсы
 cap.release()
