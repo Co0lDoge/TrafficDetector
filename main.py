@@ -82,22 +82,22 @@ while cap.isOpened():
     sector.update(counter.regions)
     logging.info(f"Обновлены сектора по времени {sector.period_timer.time}")
 
-    cv2.putText(
-        frame,
-        f"{sector.sectors[0].classwise_traveled_count}",
-        (10, 200),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        (255, 255, 255)
-    )
-    cv2.putText(
-        frame,
-        f"Current period timer: {int(sector.period_timer.time)}",
-        (10, 230),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        (255, 255, 255)
-    )
+    # cv2.putText(
+    #     frame,
+    #     f"{sector.sectors[0].classwise_traveled_count}",
+    #     (10, 200),
+    #     cv2.FONT_HERSHEY_SIMPLEX,
+    #     1,
+    #     (255, 255, 255)
+    # )
+    # cv2.putText(
+    #     frame,
+    #     f"Current period timer: {int(sector.period_timer.time)}",
+    #     (10, 230),
+    #     cv2.FONT_HERSHEY_SIMPLEX,
+    #     1,
+    #     (255, 255, 255)
+    # )
 
     # Показ текущего кадра
     output.write(frame)
