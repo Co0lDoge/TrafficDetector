@@ -30,8 +30,12 @@ class RegionsCounter:
     def __init__(self, model, imgsz, regions_points: list[list[int]]):
         self.model = YOLO(model)
         self.regions = [Region(points, self.model.names.values()) for points in regions_points]
-        # TODO: Исправить WARNING imgsz=[1280, 720] must be multiple of max stride 32, updating to [1280, 736]
-        self.imgsz = imgsz
+        # TODO: 
+        width = imgsz[1]
+        height = imgsz[0]
+        adjusted_width = (width + 32 - 1) // 32 * 32
+        adjusted_height = (height + 32 - 1) // 32 * 32
+        self.imgsz = (adjusted_height, adjusted_width)
     
     def count(self, im0, *, annotate=False, draw_regions=True):
         results = self.model.track(im0, persist=True, imgsz=self.imgsz)
