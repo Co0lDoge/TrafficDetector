@@ -4,6 +4,7 @@
 /output/*
 __pycache__
 .venv
+.idea
 
 traffic-stats.xlsx
 order-479.mp4
