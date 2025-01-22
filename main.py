@@ -2,6 +2,7 @@ import cv2
 import os
 import tomllib
 import pandas as pd
+from pandas.io.excel import ExcelWriter
 import logging
 
 from args_loader import load_args, get_adapted_region_points
@@ -56,7 +57,7 @@ output = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 frame_dt = 1/fps    # TODO подтягивать шаг кадра из файла
 timer = StepTimer(frame_dt)
 regions = get_adapted_region_points(list_region, video_width, width)
-counter = RegionsCounter(model_path, imgsz=(width, height), regions_points=regions)
+counter = RegionsCounter(model_path, regions_points=regions)
 
 sector = SectorCluster(
     settings["sector-length"],
@@ -111,12 +112,22 @@ logging.info("Обработка видео завершена.")
 traffic_stats = sector.traffic_stats()
 classwise_stats = sector.classwise_stats()
 logging.info("Созданы датафреймы со статистикой.")
-print(traffic_stats)
-print(classwise_stats)
 
-merged_stats = pd.concat([traffic_stats, classwise_stats], axis=1)
-merged_stats.to_excel(report_path)
-logging.info(f"Отчет сохранен в {report_path}")
+res_dataframes = []
+i = 1
+for traf_stat, class_stat in zip(traffic_stats, classwise_stats):
+    df_res_tmp = pd.concat([traf_stat, class_stat], axis=1)
+    res_dataframes.append(df_res_tmp)
+
+    print("*********************")
+    print(f"Sector #{i}")
+    print(df_res_tmp)
+    i += 1
+
+# Запись данных в файл
+with ExcelWriter(report_path) as writer:
+    for ind, df in enumerate(res_dataframes):
+        df.to_excel(writer, sheet_name=f"{ind + 1}")
 
 # Освобождаем ресурсы
 cap.release()

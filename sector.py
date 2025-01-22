@@ -11,36 +11,38 @@ Secs = float
 Kilometer = float
 SECS_IN_HOUR: Final = 3600
 
+
 class Sector:
     def __init__(self, vehicle_classes):
         self.periods_data: List[Period] = []
         self.ids_travel_time = {}
-        self.classwise_traveled_count = {cls:0 for cls in vehicle_classes}
+        self.classwise_traveled_count = {cls: 0 for cls in vehicle_classes}
         self.ids_start_time = {}
         self.ids_blacklist = set()
         self.travelling_ids = {}
 
+
 class SectorCluster:
     def __init__(
-        self,
-        length: int, # Длина сектора в километрах
-        lane_count: int,
-        vehicle_classes: Sequence[str],
-        timer,
-        observation_time: Secs,
-        vechicle_size_coeffs: dict[str, float],
-        region_count: int
+            self,
+            length: int,  # Длина сектора в километрах
+            lane_count: int,
+            vehicle_classes: Sequence[str],
+            timer,
+            observation_time: Secs,
+            vechicle_size_coeffs: dict[str, float],
+            region_count: int
     ):
         self.size_coeffs = vechicle_size_coeffs
         self.vehicle_classes = vehicle_classes
         self.length = length
         self.lane_count = lane_count
-        self.len_sector = region_count//2 # Сектор - пространство между двумя регионами
+        self.len_sector = region_count // 2  # Сектор - пространство между двумя регионами
 
         self.observation_period: Secs = observation_time
         self.period_timer = timer
-        
-        self.sectors = [Sector(self.vehicle_classes) for _ in range(self.len_sector)]   
+
+        self.sectors = [Sector(self.vehicle_classes) for _ in range(self.len_sector)]
 
     def update(self, regions: List[ObjectCounter]):
         self.period_timer.step_forward()
@@ -84,49 +86,55 @@ class SectorCluster:
             ))
 
             sector.ids_travel_time.clear()
-            sector.classwise_traveled_count = {cls:0 for cls in self.vehicle_classes}
+            sector.classwise_traveled_count = {cls: 0 for cls in self.vehicle_classes}
         self.period_timer.reset()
 
-    def traffic_stats(self) -> pd.DataFrame:
-        stats = {
-            "Интенсивность траффика": [],
-            "Среднее время проезда": [],
-            "Средняя скорость движения": [],
-            "Плотность траффика": [],
-            "Время наблюдения": []
-        }
+    def traffic_stats(self) -> List[pd.DataFrame]:
 
+        dataframes = []
         # TODO: Максим: сделать генерацию отчета за все периоды
-        for period in self.sectors[0].periods_data:
-            stats["Интенсивность траффика"].append(traffic_intensity(
-                period.classwise_traveled_count,
-                self.size_coeffs,
-                period.observation_time
-            ))
+        for sector in self.sectors:
+            stats = {
+                "Интенсивность траффика": [],
+                "Среднее время проезда": [],
+                "Средняя скорость движения": [],
+                "Плотность траффика": [],
+                "Время наблюдения": []
+            }
+            for period in sector.periods_data:
+                stats["Интенсивность траффика"].append(traffic_intensity(
+                    period.classwise_traveled_count,
+                    self.size_coeffs,
+                    period.observation_time
+                ))
 
-            vehicles_travel_time = period.ids_travel_time.values()
-            stats["Среднее время проезда"].append(mean_travel_time(vehicles_travel_time))
-            stats["Средняя скорость движения"].append(mean_vehicle_speed(vehicles_travel_time, self.length))
+                vehicles_travel_time = period.ids_travel_time.values()
+                stats["Среднее время проезда"].append(mean_travel_time(vehicles_travel_time))
+                stats["Средняя скорость движения"].append(mean_vehicle_speed(vehicles_travel_time, self.length))
 
-            stats["Плотность траффика"].append(traffic_density(
-                period.classwise_traveled_count,
-                self.size_coeffs,
-                vehicles_travel_time,
-                self.length,
-                period.observation_time,
-                lane_count=self.lane_count
-            ))
+                stats["Плотность траффика"].append(traffic_density(
+                    period.classwise_traveled_count,
+                    self.size_coeffs,
+                    vehicles_travel_time,
+                    self.length,
+                    period.observation_time,
+                    lane_count=self.lane_count
+                ))
 
-            stats["Время наблюдения"].append(period.observation_time)
+                stats["Время наблюдения"].append(period.observation_time)
+            dataframes.append(pd.DataFrame(stats))
 
-        return pd.DataFrame(stats)
-    
-    def classwise_stats(self) -> pd.DataFrame:
-        stats = {cls: [] for cls in self.vehicle_classes}
+        return dataframes
 
+    def classwise_stats(self) -> List[pd.DataFrame]:
+
+        dataframes = []
         # TODO: Максим: сделать генерацию отчета за все периоды
-        for period in self.sectors[0].periods_data:
-            for cls in self.vehicle_classes:
-                stats[cls].append(period.classwise_traveled_count[cls])
+        for sector in self.sectors:
+            stats = {cls: [] for cls in self.vehicle_classes}
+            for period in sector.periods_data:
+                for cls in self.vehicle_classes:
+                    stats[cls].append(period.classwise_traveled_count[cls])
+            dataframes.append(pd.DataFrame(stats))
 
-        return pd.DataFrame(stats)
+        return dataframes
