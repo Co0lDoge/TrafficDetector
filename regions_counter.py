@@ -30,7 +30,6 @@ class RegionsCounter:
     def __init__(self, model, imgsz, regions_points: list[list[int]]):
         self.model = YOLO(model)
         self.regions = [Region(points, self.model.names.values()) for points in regions_points]
-        # TODO: 
         width = imgsz[1]
         height = imgsz[0]
         adjusted_width = (width + 32 - 1) // 32 * 32
@@ -61,6 +60,7 @@ class RegionsCounter:
                         region.classwise_count[cls_name] += 1
                         region.counted_ids[track_id] = VehicleID(cls_name, box)
                     elif crossed_before:
+                        # TODO: Зачем это нужно? На результат это не влияет
                         region.counted_ids.pop(track_id, None)
 
         if draw_regions:
