@@ -4,7 +4,8 @@ import pandas as pd
 from ultralytics.solutions import ObjectCounter
 
 from funcs import *
-from period import Period
+from traffic_observer.period import Period
+from traffic_observer.step_timer import StepTimer
 
 Hour = float
 Secs = float
@@ -22,13 +23,13 @@ class Sector:
         self.travelling_ids = {}
 
 
-class SectorCluster:
+class SectorManager:
     def __init__(
             self,
             length: int,  # Длина сектора в километрах
             lane_count: int,
             vehicle_classes: Sequence[str],
-            timer,
+            time_step: int,
             observation_time: Secs,
             vechicle_size_coeffs: dict[str, float],
             region_count: int
@@ -40,7 +41,7 @@ class SectorCluster:
         self.len_sector = region_count // 2  # Сектор - пространство между двумя регионами
 
         self.observation_period: Secs = observation_time
-        self.period_timer = timer
+        self.period_timer = StepTimer(time_step)
 
         self.sectors = [Sector(self.vehicle_classes) for _ in range(self.len_sector)]
 

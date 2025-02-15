@@ -5,11 +5,10 @@ from pandas.io.excel import ExcelWriter
 import logging
 
 from args_loader import load_args, get_adapted_region_points
-from sector import SectorCluster
-from regions_counter import RegionsCounter
-from step_timer import StepTimer
+from traffic_observer.sector import SectorManager
+from traffic_observer.regions_counter import RegionsCounter
 
-def create_stats_report(sector_cluster: SectorCluster, report_path: str):
+def create_stats_report(sector_cluster: SectorManager, report_path: str):
     traffic_stats = sector_cluster.traffic_stats()
     classwise_stats = sector_cluster.classwise_stats()
     logging.info("Созданы датафреймы со статистикой.")
@@ -77,16 +76,15 @@ width, height = settings["target-width"], settings["target-height"]
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 output = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
-frame_dt = 1/fps    # TODO подтягивать шаг кадра из файла
-timer = StepTimer(frame_dt)
+frame_dt = 1/fps    
 regions = get_adapted_region_points(list_region, video_width, width)
 counter = RegionsCounter(model_path, regions_points=regions, imgsz=(height, width))
 
-sector = SectorCluster(
+sector = SectorManager(
     settings["sector-length"],
     settings["lane-count"],
     settings["vehicle-classes"],
-    timer,
+    1/fps,
     settings["observation-time"],
     settings["vehicle-size-coeffs"],
     len(list_region)
@@ -101,7 +99,7 @@ while cap.isOpened():
 
     frame = cv2.resize(frame, (width, height))
     counter.count(frame, annotate=True)
-    logging.info(f"Обработан кадр по времени {timer.time}")
+    #logging.info(f"Обработан кадр по времени {timer.time}")
     sector.update(counter.regions)
     logging.info(f"Обновлены сектора по времени {sector.period_timer.time}")
 
