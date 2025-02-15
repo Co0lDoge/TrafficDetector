@@ -34,12 +34,12 @@ class SectorManager:
         self.vehicle_classes = vehicle_classes
         self.length = length
         self.lane_count = lane_count
-        self.len_sector = len(region_counter.regions)//2  # Сектор - пространство между двумя регионами
+        self.num_sectors = len(region_counter.regions)//2  # Каждому сектору соответствует два региона
         self.region_counter = region_counter
         self.observation_period = observation_time
         self.period_timer = StepTimer(time_step)
 
-        self.sectors = [Sector(self.vehicle_classes) for _ in range(self.len_sector)]
+        self.sectors = [Sector(self.vehicle_classes) for _ in range(self.num_sectors)]
 
     def update(self, frame: cv2.typing.MatLike):
         self.region_counter.count(frame, annotate=True)
@@ -50,17 +50,17 @@ class SectorManager:
             self.new_period()
 
         # Итерация по секторам и регионам, каждому сектору соответствует два региона
-        iter_region = iter(self.region_counter.regions)
-        iter_sector = iter(self.sectors)
-        for _ in range(self.len_sector):
-            start_counter = next(iter_region)
-            end_counter = next(iter_region)
-            sector = next(iter_sector)
+        for i in range(self.num_sectors):
+            start_counter = self.region_counter.regions[2 * i]
+            end_counter = self.region_counter.regions[2 * i + 1]
+            sector = self.sectors[i]
 
+            # Сохранение времени проезда для всего транспорта, перешедшего конечный регион
             for vid in start_counter.counted_ids:
                 if vid not in sector.ids_start_time and vid not in sector.ids_blacklist:
                     sector.ids_start_time[vid] = self.period_timer.unresettable_time
 
+            # Обновление времени начала движения для всего транспорта перешедшего начальный регион
             for vid in end_counter.counted_ids:
                 try:
                     if vid not in sector.ids_blacklist:
@@ -72,6 +72,7 @@ class SectorManager:
                         class_name = end_counter.counted_ids[vid].class_name
                         sector.classwise_traveled_count[class_name] += 1
                         sector.ids_blacklist.add(vid)
+                # TODO: Проверить, что это условие необходимо
                 except KeyError:
                     if vid in sector.ids_blacklist:
                         sector.ids_blacklist.remove(vid)
