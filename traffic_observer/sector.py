@@ -1,11 +1,14 @@
 from typing import Sequence, Final, List
 
 import pandas as pd
+import cv2
 from ultralytics.solutions import ObjectCounter
+import logging
 
 from funcs import *
 from traffic_observer.period import Period
 from traffic_observer.step_timer import StepTimer
+from traffic_observer.regions_counter import RegionCounter
 
 Hour = float
 Secs = float
@@ -32,26 +35,29 @@ class SectorManager:
             time_step: int,
             observation_time: Secs,
             vechicle_size_coeffs: dict[str, float],
-            region_count: int
+            region_counter: RegionCounter
     ):
         self.size_coeffs = vechicle_size_coeffs
         self.vehicle_classes = vehicle_classes
         self.length = length
         self.lane_count = lane_count
-        self.len_sector = region_count // 2  # Сектор - пространство между двумя регионами
-
+        self.len_sector = len(region_counter.regions)//2  # Сектор - пространство между двумя регионами
+        self.region_counter = region_counter
         self.observation_period: Secs = observation_time
         self.period_timer = StepTimer(time_step)
 
         self.sectors = [Sector(self.vehicle_classes) for _ in range(self.len_sector)]
 
-    def update(self, regions: List[ObjectCounter]):
+    def update(self, frame: cv2.typing.MatLike):
+        self.region_counter.count(frame, annotate=True)
+        logging.info(f"Обработан кадр по времени {self.period_timer.time}")
+
         self.period_timer.step_forward()
         if self.period_timer.time >= self.observation_period:
             self.new_period()
 
         # Итерация по секторам и регионам, каждому сектору соответствует два региона
-        iter_region = iter(regions)
+        iter_region = iter(self.region_counter.regions)
         iter_sector = iter(self.sectors)
         for _ in range(self.len_sector):
             start_counter = next(iter_region)
@@ -77,6 +83,8 @@ class SectorManager:
                 except KeyError:
                     if vid in sector.ids_blacklist:
                         sector.ids_blacklist.remove(vid)
+            
+        logging.info(f"Обновлены сектора по времени {self.period_timer.time}")
 
     def new_period(self):
         for sector in self.sectors:

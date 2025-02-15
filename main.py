@@ -32,14 +32,14 @@ output = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 regions = get_adapted_region_points(list_region, video_width, width)
 
 counter = RegionCounter(model_path, regions_points=regions, imgsz=(height, width))
-sector = SectorManager(
+sector_manager = SectorManager(
     settings["sector-length"],
     settings["lane-count"],
     settings["vehicle-classes"],
     1/fps,
     settings["observation-time"],
     settings["vehicle-size-coeffs"],
-    len(regions)
+    counter
 )
 
 # Начало обработки видео
@@ -50,10 +50,7 @@ while cap.isOpened():
         break
 
     frame = cv2.resize(frame, (width, height))
-    counter.count(frame, annotate=True)
-    #logging.info(f"Обработан кадр по времени {timer.time}")
-    sector.update(counter.regions)
-    logging.info(f"Обновлены сектора по времени {sector.period_timer.time}")
+    sector_manager.update(frame)
 
     # Показ текущего кадра
     cv2.imshow("Frame", frame)
@@ -62,11 +59,11 @@ while cap.isOpened():
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-sector.new_period()
+sector_manager.new_period()
 logging.info("Обработка видео завершена.")
 
 # Создание отчёта
-create_stats_report(sector, report_path)
+create_stats_report(sector_manager, report_path)
 
 # Освобождаем ресурсы
 cap.release()
