@@ -1,20 +1,13 @@
-from typing import Sequence, Final, List
+from typing import Sequence, List
 
 import pandas as pd
 import cv2
-from ultralytics.solutions import ObjectCounter
 import logging
 
 from funcs import *
 from traffic_observer.period import Period
 from traffic_observer.step_timer import StepTimer
 from traffic_observer.regions_counter import RegionCounter
-
-Hour = float
-Secs = float
-Kilometer = float
-SECS_IN_HOUR: Final = 3600
-
 
 class Sector:
     def __init__(self, vehicle_classes):
@@ -33,7 +26,7 @@ class SectorManager:
             lane_count: int,
             vehicle_classes: Sequence[str],
             time_step: int,
-            observation_time: Secs,
+            observation_time: int, # Время наблюдения в секундах
             vechicle_size_coeffs: dict[str, float],
             region_counter: RegionCounter
     ):
@@ -43,7 +36,7 @@ class SectorManager:
         self.lane_count = lane_count
         self.len_sector = len(region_counter.regions)//2  # Сектор - пространство между двумя регионами
         self.region_counter = region_counter
-        self.observation_period: Secs = observation_time
+        self.observation_period = observation_time
         self.period_timer = StepTimer(time_step)
 
         self.sectors = [Sector(self.vehicle_classes) for _ in range(self.len_sector)]
@@ -63,7 +56,6 @@ class SectorManager:
             start_counter = next(iter_region)
             end_counter = next(iter_region)
             sector = next(iter_sector)
-            #print(sector.classwise_traveled_count)
 
             for vid in start_counter.counted_ids:
                 if vid not in sector.ids_start_time and vid not in sector.ids_blacklist:
@@ -99,7 +91,6 @@ class SectorManager:
         self.period_timer.reset()
 
     def traffic_stats(self) -> List[pd.DataFrame]:
-
         dataframes = []
         for sector in self.sectors:
             stats = {
@@ -135,7 +126,6 @@ class SectorManager:
         return dataframes
 
     def classwise_stats(self) -> List[pd.DataFrame]:
-
         dataframes = []
         for sector in self.sectors:
             stats = {class_name: [] for class_name in self.vehicle_classes}
