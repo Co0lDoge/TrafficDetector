@@ -1,33 +1,11 @@
 import cv2
 import tomllib
-import pandas as pd
-from pandas.io.excel import ExcelWriter
 import logging
 
 from args_loader import load_args, get_adapted_region_points
+from data_manager.traffic_report import create_stats_report
 from traffic_observer.sector import SectorManager
 from traffic_observer.regions_counter import RegionsCounter
-
-def create_stats_report(sector_cluster: SectorManager, report_path: str):
-    traffic_stats = sector_cluster.traffic_stats()
-    classwise_stats = sector_cluster.classwise_stats()
-    logging.info("Созданы датафреймы со статистикой.")
-
-    res_dataframes = []
-    i = 1
-    for traf_stat, class_stat in zip(traffic_stats, classwise_stats):
-        df_res_tmp = pd.concat([traf_stat, class_stat], axis=1)
-        res_dataframes.append(df_res_tmp)
-
-        print("*********************")
-        print(f"Sector #{i}")
-        print(df_res_tmp)
-        i += 1
-
-    # Запись данных в файл
-    with ExcelWriter(report_path) as writer:
-        for ind, df in enumerate(res_dataframes):
-            df.to_excel(writer, sheet_name=f"{ind + 1}")
 
 def get_fps(cap) -> float|int:
     major_ver, _, _ = cv2.__version__.split('.')
@@ -100,6 +78,7 @@ while cap.isOpened():
     logging.info(f"Обновлены сектора по времени {sector.period_timer.time}")
 
     # Показ текущего кадра
+    cv2.imshow("Frame", frame)
     output.write(frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):

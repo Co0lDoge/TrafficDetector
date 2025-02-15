@@ -93,7 +93,6 @@ class SectorManager:
     def traffic_stats(self) -> List[pd.DataFrame]:
 
         dataframes = []
-        # TODO: Максим: сделать генерацию отчета за все периоды
         for sector in self.sectors:
             stats = {
                 "Интенсивность траффика": [],
@@ -130,7 +129,6 @@ class SectorManager:
     def classwise_stats(self) -> List[pd.DataFrame]:
 
         dataframes = []
-        # TODO: Максим: сделать генерацию отчета за все периоды
         for sector in self.sectors:
             stats = {cls: [] for cls in self.vehicle_classes}
             for period in sector.periods_data:
