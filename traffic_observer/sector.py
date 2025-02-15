@@ -17,7 +17,7 @@ class Sector:
     def __init__(self, vehicle_classes):
         self.periods_data: List[Period] = []
         self.ids_travel_time = {}
-        self.classwise_traveled_count = {cls: 0 for cls in vehicle_classes}
+        self.classwise_traveled_count = {class_name: 0 for class_name in vehicle_classes}
         self.ids_start_time = {}
         self.ids_blacklist = set()
         self.travelling_ids = {}
@@ -71,8 +71,8 @@ class SectorManager:
 
                         sector.ids_travel_time[vid] = dt
 
-                        cls_name = end_counter.counted_ids[vid].cls_name
-                        sector.classwise_traveled_count[cls_name] += 1
+                        class_name = end_counter.counted_ids[vid].class_name
+                        sector.classwise_traveled_count[class_name] += 1
                         sector.ids_blacklist.add(vid)
                 except KeyError:
                     if vid in sector.ids_blacklist:
@@ -87,7 +87,7 @@ class SectorManager:
             ))
 
             sector.ids_travel_time.clear()
-            sector.classwise_traveled_count = {cls: 0 for cls in self.vehicle_classes}
+            sector.classwise_traveled_count = {class_name: 0 for class_name in self.vehicle_classes}
         self.period_timer.reset()
 
     def traffic_stats(self) -> List[pd.DataFrame]:
@@ -130,10 +130,10 @@ class SectorManager:
 
         dataframes = []
         for sector in self.sectors:
-            stats = {cls: [] for cls in self.vehicle_classes}
+            stats = {class_name: [] for class_name in self.vehicle_classes}
             for period in sector.periods_data:
-                for cls in self.vehicle_classes:
-                    stats[cls].append(period.classwise_traveled_count[cls])
+                for class_name in self.vehicle_classes:
+                    stats[class_name].append(period.classwise_traveled_count[class_name])
             dataframes.append(pd.DataFrame(stats))
 
         return dataframes

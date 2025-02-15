@@ -5,7 +5,7 @@ import logging
 from args_loader import load_args, get_adapted_region_points
 from data_manager.traffic_report import create_stats_report
 from traffic_observer.sector import SectorManager
-from traffic_observer.regions_counter import RegionsCounter
+from traffic_observer.regions_counter import RegionCounter
 
 def get_fps(cap) -> float|int:
     major_ver, _, _ = cv2.__version__.split('.')
@@ -44,7 +44,6 @@ with open("settings.toml", "rb") as f:
 logging.info(f"Загруженные настройки: {settings}")
 
 cap, fps = open_video(video_path)
-
 video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 width, height = settings["target-width"], settings["target-height"]
 
@@ -53,7 +52,7 @@ output = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
 regions = get_adapted_region_points(list_region, video_width, width)
 
-counter = RegionsCounter(model_path, regions_points=regions, imgsz=(height, width))
+counter = RegionCounter(model_path, regions_points=regions, imgsz=(height, width))
 sector = SectorManager(
     settings["sector-length"],
     settings["lane-count"],
@@ -61,7 +60,7 @@ sector = SectorManager(
     1/fps,
     settings["observation-time"],
     settings["vehicle-size-coeffs"],
-    len(list_region)
+    len(regions)
 )
 
 # Начало обработки видео

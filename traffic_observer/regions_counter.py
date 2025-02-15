@@ -14,8 +14,8 @@ def _annotate(im0, annotator, box, track_id, cls):
 
 
 class VehicleID:
-    def __init__(self, cls_name: str, bb):
-        self.cls_name = cls_name
+    def __init__(self, class_name: str, bb):
+        self.class_name = class_name
         self.bb = bb
 
 
@@ -26,7 +26,7 @@ class Region:
         self.counted_ids: dict[int, VehicleID] = {}
 
 
-class RegionsCounter:
+class RegionCounter:
     def __init__(self, model, imgsz, regions_points: list[list[int]]):
         self.model = YOLO(model)
         self.regions = [Region(points, self.model.names.values()) for points in regions_points]
