@@ -2,32 +2,11 @@ import cv2
 import tomllib
 import logging
 
-from args_loader import load_args, get_adapted_region_points
+from data_loader.args_loader import load_args, get_adapted_region_points
+from data_loader.video_loader import open_video
 from data_manager.traffic_report import create_stats_report
 from traffic_observer.sector import SectorManager
 from traffic_observer.regions_counter import RegionCounter
-
-def get_fps(cap) -> float|int:
-    major_ver, _, _ = cv2.__version__.split('.')
-    if int(major_ver) >= 3:
-        return cap.get(cv2.CAP_PROP_FPS)
-    return cap.get(cv2.cv.CV_CAP_PROP_FPS)
-
-def open_video(video_path: str):
-    cap = cv2.VideoCapture(video_path)
-
-    if not cap.isOpened():
-        logging.error(f"Не удалось открыть видеофайл {video_path}")
-        quit()
-    else:
-        logging.info(f"Видеофайл открыт успешно: {video_path}")
-        fps = get_fps(cap)
-        if fps > 0:
-            logging.info(f"Частота кадров видеофайла: {fps:.2f} FPS")
-        else:
-            logging.warning("Частота кадров не может быть определена.")
-
-    return cap, fps
 
 logging.basicConfig(
     level=logging.INFO,
