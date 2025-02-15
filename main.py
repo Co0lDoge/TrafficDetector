@@ -29,18 +29,27 @@ def create_stats_report(sector_cluster: SectorManager, report_path: str):
         for ind, df in enumerate(res_dataframes):
             df.to_excel(writer, sheet_name=f"{ind + 1}")
 
-    # Освобождаем ресурсы
-    cap.release()
-    output.release()
-    cv2.destroyAllWindows()
-
-    logging.info(f"Видеофайл сохранён в {output_path}")
-
 def get_fps(cap) -> float|int:
     major_ver, _, _ = cv2.__version__.split('.')
     if int(major_ver) >= 3:
         return cap.get(cv2.CAP_PROP_FPS)
     return cap.get(cv2.cv.CV_CAP_PROP_FPS)
+
+def open_video(video_path: str):
+    cap = cv2.VideoCapture(video_path)
+
+    if not cap.isOpened():
+        logging.error(f"Не удалось открыть видеофайл {video_path}")
+        quit()
+    else:
+        logging.info(f"Видеофайл открыт успешно: {video_path}")
+        fps = get_fps(cap)
+        if fps > 0:
+            logging.info(f"Частота кадров видеофайла: {fps:.2f} FPS")
+        else:
+            logging.warning("Частота кадров не может быть определена.")
+
+    return cap, fps
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,21 +63,9 @@ video_path, model_path, output_path, report_path, list_region = load_args()
 
 with open("settings.toml", "rb") as f:
     settings = tomllib.load(f)
-
-# Открываем видео
-cap = cv2.VideoCapture(video_path)
-
-if not cap.isOpened():
-    logging.error(f"Не удалось открыть видеофайл {video_path}")
-    quit()
-else:
-    logging.info(f"Видеофайл открыт успешно: {video_path}")
-    fps = get_fps(cap)
-    if fps > 0:
-        logging.info(f"Частота кадров видеофайла: {fps:.2f} FPS")
-    else:
-        logging.warning("Частота кадров не может быть определена.")
 logging.info(f"Загруженные настройки: {settings}")
+
+cap, fps = open_video(video_path)
 
 video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 width, height = settings["target-width"], settings["target-height"]
@@ -76,10 +73,9 @@ width, height = settings["target-width"], settings["target-height"]
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 output = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
-frame_dt = 1/fps    
 regions = get_adapted_region_points(list_region, video_width, width)
-counter = RegionsCounter(model_path, regions_points=regions, imgsz=(height, width))
 
+counter = RegionsCounter(model_path, regions_points=regions, imgsz=(height, width))
 sector = SectorManager(
     settings["sector-length"],
     settings["lane-count"],
@@ -114,3 +110,10 @@ logging.info("Обработка видео завершена.")
 
 # Создание отчёта
 create_stats_report(sector, report_path)
+
+# Освобождаем ресурсы
+cap.release()
+output.release()
+cv2.destroyAllWindows()
+
+logging.info(f"Видеофайл сохранён в {output_path}")
