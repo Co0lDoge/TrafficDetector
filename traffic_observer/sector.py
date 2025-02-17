@@ -24,6 +24,7 @@ class SectorManager:
             self,
             length: int,  # Длина сектора в километрах
             lane_count: int,
+            max_speed: int,
             vehicle_classes: Sequence[str],
             time_step: int,
             observation_time: int, # Время наблюдения в секундах

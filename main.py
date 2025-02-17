@@ -35,6 +35,7 @@ counter = RegionCounter(model_path, regions_points=regions, imgsz=(height, width
 sector_manager = SectorManager(
     settings["sector-length"],
     settings["lane-count"],
+    settings["max-speed"],
     settings["vehicle-classes"],
     1/fps,
     settings["observation-time"],
