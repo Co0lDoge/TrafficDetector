@@ -53,7 +53,6 @@ while cap.isOpened():
     sector_manager.update(frame)
 
     # Показ текущего кадра
-    cv2.imshow("Frame", frame)
     output.write(frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
