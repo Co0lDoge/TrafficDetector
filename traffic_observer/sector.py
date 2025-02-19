@@ -24,6 +24,7 @@ class SectorManager:
             self,
             length: int,  # Длина сектора в километрах
             lane_count: int,
+            max_speed: int,
             vehicle_classes: Sequence[str],
             time_step: int,
             observation_time: int, # Время наблюдения в секундах
@@ -62,20 +63,16 @@ class SectorManager:
 
             # Обновление времени начала движения для всего транспорта перешедшего начальный регион
             for vid in end_counter.counted_ids:
-                try:
-                    if vid not in sector.ids_blacklist:
-                        dt = self.period_timer.unresettable_time - sector.ids_start_time[vid]
-                        sector.ids_start_time.pop(vid)
+                if vid not in sector.ids_blacklist and vid in sector.ids_start_time:
+                    dt = self.period_timer.unresettable_time - sector.ids_start_time[vid]
+                    sector.ids_start_time.pop(vid)
 
-                        sector.ids_travel_time[vid] = dt
+                    sector.ids_travel_time[vid] = dt
 
-                        class_name = end_counter.counted_ids[vid].class_name
-                        sector.classwise_traveled_count[class_name] += 1
-                        sector.ids_blacklist.add(vid)
-                # TODO: Проверить, что это условие необходимо
-                except KeyError:
-                    if vid in sector.ids_blacklist:
-                        sector.ids_blacklist.remove(vid)
+                    class_name = end_counter.counted_ids[vid].class_name
+                    sector.classwise_traveled_count[class_name] += 1
+                    sector.ids_blacklist.add(vid)
+                    
             
         logging.info(f"Обновлены сектора по времени {self.period_timer.time}")
 
