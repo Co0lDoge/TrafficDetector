@@ -1,81 +1,80 @@
-from typing import Sequence, Final, List
+from typing import Sequence, List
 
 import pandas as pd
-from ultralytics.solutions import ObjectCounter
+import cv2
+import logging
 
 from funcs import *
-from period import Period
-
-Hour = float
-Secs = float
-Kilometer = float
-SECS_IN_HOUR: Final = 3600
-
+from traffic_observer.period import Period
+from traffic_observer.step_timer import StepTimer
+from traffic_observer.regions_counter import RegionCounter
 
 class Sector:
     def __init__(self, vehicle_classes):
         self.periods_data: List[Period] = []
         self.ids_travel_time = {}
-        self.classwise_traveled_count = {cls: 0 for cls in vehicle_classes}
+        self.classwise_traveled_count = {class_name: 0 for class_name in vehicle_classes}
         self.ids_start_time = {}
         self.ids_blacklist = set()
         self.travelling_ids = {}
 
 
-class SectorCluster:
+class SectorManager:
     def __init__(
             self,
             length: int,  # Длина сектора в километрах
             lane_count: int,
+            max_speed: int,
             vehicle_classes: Sequence[str],
-            timer,
-            observation_time: Secs,
+            time_step: int,
+            observation_time: int, # Время наблюдения в секундах
             vechicle_size_coeffs: dict[str, float],
-            region_count: int
+            region_counter: RegionCounter
     ):
         self.size_coeffs = vechicle_size_coeffs
         self.vehicle_classes = vehicle_classes
         self.length = length
         self.lane_count = lane_count
-        self.len_sector = region_count // 2  # Сектор - пространство между двумя регионами
+        self.num_sectors = len(region_counter.regions)//2  # Каждому сектору соответствует два региона
+        self.region_counter = region_counter
+        self.observation_period = observation_time
+        self.period_timer = StepTimer(time_step)
 
-        self.observation_period: Secs = observation_time
-        self.period_timer = timer
+        self.sectors = [Sector(self.vehicle_classes) for _ in range(self.num_sectors)]
 
-        self.sectors = [Sector(self.vehicle_classes) for _ in range(self.len_sector)]
+    def update(self, frame: cv2.typing.MatLike):
+        self.region_counter.count(frame, annotate=True)
+        logging.info(f"Обработан кадр по времени {self.period_timer.time}")
 
-    def update(self, regions: List[ObjectCounter]):
         self.period_timer.step_forward()
         if self.period_timer.time >= self.observation_period:
             self.new_period()
 
         # Итерация по секторам и регионам, каждому сектору соответствует два региона
-        iter_region = iter(regions)
-        iter_sector = iter(self.sectors)
-        for _ in range(self.len_sector):
-            start_counter = next(iter_region)
-            end_counter = next(iter_region)
-            sector = next(iter_sector)
-            #print(sector.classwise_traveled_count)
+        for i in range(self.num_sectors):
+            start_counter = self.region_counter.regions[2 * i]
+            end_counter = self.region_counter.regions[2 * i + 1]
+            sector = self.sectors[i]
 
+            # Сохранение времени проезда для всего транспорта, перешедшего конечный регион
             for vid in start_counter.counted_ids:
                 if vid not in sector.ids_start_time and vid not in sector.ids_blacklist:
                     sector.ids_start_time[vid] = self.period_timer.unresettable_time
 
+            # Обновление времени начала движения для всего транспорта перешедшего начальный регион
             for vid in end_counter.counted_ids:
-                try:
-                    if vid not in sector.ids_blacklist:
-                        dt = self.period_timer.unresettable_time - sector.ids_start_time[vid]
-                        sector.ids_start_time.pop(vid)
+                if vid not in sector.ids_blacklist and vid in sector.ids_start_time:
+                    dt = self.period_timer.unresettable_time - sector.ids_start_time[vid]
+                    sector.ids_start_time.pop(vid)
 
-                        sector.ids_travel_time[vid] = dt
+                    sector.ids_travel_time[vid] = dt
 
-                        cls_name = end_counter.counted_ids[vid].cls_name
-                        sector.classwise_traveled_count[cls_name] += 1
-                        sector.ids_blacklist.add(vid)
-                except KeyError:
-                    if vid in sector.ids_blacklist:
-                        sector.ids_blacklist.remove(vid)
+                    class_name = end_counter.counted_ids[vid].class_name
+                    sector.classwise_traveled_count[class_name] += 1
+                    sector.ids_blacklist.add(vid)
+                    
+            
+        logging.info(f"Обновлены сектора по времени {self.period_timer.time}")
 
     def new_period(self):
         for sector in self.sectors:
@@ -86,13 +85,11 @@ class SectorCluster:
             ))
 
             sector.ids_travel_time.clear()
-            sector.classwise_traveled_count = {cls: 0 for cls in self.vehicle_classes}
+            sector.classwise_traveled_count = {class_name: 0 for class_name in self.vehicle_classes}
         self.period_timer.reset()
 
     def traffic_stats(self) -> List[pd.DataFrame]:
-
         dataframes = []
-        # TODO: Максим: сделать генерацию отчета за все периоды
         for sector in self.sectors:
             stats = {
                 "Интенсивность траффика": [],
@@ -127,14 +124,12 @@ class SectorCluster:
         return dataframes
 
     def classwise_stats(self) -> List[pd.DataFrame]:
-
         dataframes = []
-        # TODO: Максим: сделать генерацию отчета за все периоды
         for sector in self.sectors:
-            stats = {cls: [] for cls in self.vehicle_classes}
+            stats = {class_name: [] for class_name in self.vehicle_classes}
             for period in sector.periods_data:
-                for cls in self.vehicle_classes:
-                    stats[cls].append(period.classwise_traveled_count[cls])
+                for class_name in self.vehicle_classes:
+                    stats[class_name].append(period.classwise_traveled_count[class_name])
             dataframes.append(pd.DataFrame(stats))
 
         return dataframes

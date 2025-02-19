@@ -14,8 +14,8 @@ def _annotate(im0, annotator, box, track_id, cls):
 
 
 class VehicleID:
-    def __init__(self, cls_name: str, bb):
-        self.cls_name = cls_name
+    def __init__(self, class_name: str, bb):
+        self.class_name = class_name
         self.bb = bb
 
 
@@ -26,12 +26,13 @@ class Region:
         self.counted_ids: dict[int, VehicleID] = {}
 
 
-class RegionsCounter:
+class RegionCounter:
     def __init__(self, model, imgsz, regions_points: list[list[int]]):
         self.model = YOLO(model)
         self.regions = [Region(points, self.model.names.values()) for points in regions_points]
-        width = imgsz[1]
-        height = imgsz[0]
+
+        # Изменение размера изображения до кратного 32
+        height, width = imgsz
         adjusted_width = (width + 32 - 1) // 32 * 32
         adjusted_height = (height + 32 - 1) // 32 * 32
         self.imgsz = (adjusted_height, adjusted_width)
@@ -42,25 +43,27 @@ class RegionsCounter:
         if results[0].boxes.id is not None:
             boxes = results[0].boxes.xyxy.cpu()
             track_ids = results[0].boxes.id.int().cpu().tolist()
-            clss = results[0].boxes.cls.cpu().tolist()
+            classes = results[0].boxes.cls.cpu().tolist()
 
             if annotate:
                 annotator = Annotator(im0, line_width=1, example=str(self.model.names))
 
-            for box, track_id, cls in zip(boxes, track_ids, clss):
+            # Обработка детекций
+            for box, track_id, track_class in zip(boxes, track_ids, classes):
                 if annotate:
-                    _annotate(im0, annotator, box, track_id, cls)
+                    _annotate(im0, annotator, box, track_id, track_class)
 
                 for region in self.regions:
                     bbox_center = int((box[0] + box[2]) / 2), int((box[1] + box[3]) / 2)
                     crossed_before = track_id in region.counted_ids
-                    cls_name = self.model.names[cls]
+                    cls_name = self.model.names[track_class]
 
                     if is_inside_zone(bbox_center, region.points) and not crossed_before:
                         region.classwise_count[cls_name] += 1
                         region.counted_ids[track_id] = VehicleID(cls_name, box)
                     elif crossed_before:
-                        # TODO: Зачем это нужно? На результат это не влияет
+                        # Объект постоянно попадает из изчезает из зоны
+                        # TODO: Придумать способ окончательно перестать отслеживать объект
                         region.counted_ids.pop(track_id, None)
 
         if draw_regions:

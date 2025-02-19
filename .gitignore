@@ -1,7 +1,11 @@
-/model/*
-/video/*
-/classwise_test/*
-/output/*
+model
+video
+output
+__test_model
+__test_video
+__test_output
+__run.py
+
 __pycache__
 .venv
 .idea
