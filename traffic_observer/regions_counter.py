@@ -1,8 +1,5 @@
 import cv2
 import numpy as np
-from ultralytics import YOLO
-from ultralytics.utils.plotting import Annotator
-
 
 def is_inside_zone(center, zone):
     return cv2.pointPolygonTest(np.array(zone, dtype=np.int32), center, False) >= 0
@@ -27,47 +24,26 @@ class Region:
 
 
 class RegionCounter:
-    def __init__(self, model, imgsz, regions_points: list[list[int]]):
-        self.model = YOLO(model)
-        self.regions = [Region(points, self.model.names.values()) for points in regions_points]
-
-        # Изменение размера изображения до кратного 32
-        height, width = imgsz
-        adjusted_width = (width + 32 - 1) // 32 * 32
-        adjusted_height = (height + 32 - 1) // 32 * 32
-        self.imgsz = (adjusted_height, adjusted_width)
+    def __init__(self, class_names, regions_points: list[list[int]]):
+        self.regions = [Region(points, class_names.values()) for points in regions_points]
+        self.class_names = class_names
     
-    def count(self, im0, *, annotate=False, draw_regions=True):
-        results = self.model.track(im0, persist=True, imgsz=self.imgsz)
+    def count_tracklet(self, box, track_id, track_class):
+        for region in self.regions:
+            bbox_center = int((box[0] + box[2]) / 2), int((box[1] + box[3]) / 2)
+            crossed_before = track_id in region.counted_ids
+            cls_name = self.class_names[track_class]
 
-        if results[0].boxes.id is not None:
-            boxes = results[0].boxes.xyxy.cpu()
-            track_ids = results[0].boxes.id.int().cpu().tolist()
-            classes = results[0].boxes.cls.cpu().tolist()
+            if crossed_before:
+                # Объект постоянно попадает из изчезает из зоны
+                # TODO: придумать способ окончательно перестать отслеживать объект
+                region.counted_ids.pop(track_id, None)
+            elif is_inside_zone(bbox_center, region.points):
+                region.classwise_count[cls_name] += 1
+                region.counted_ids[track_id] = VehicleID(cls_name, box)
 
-            if annotate:
-                annotator = Annotator(im0, line_width=1, example=str(self.model.names))
-
-            # Обработка детекций
-            for box, track_id, track_class in zip(boxes, track_ids, classes):
-                if annotate:
-                    _annotate(im0, annotator, box, track_id, track_class)
-
-                for region in self.regions:
-                    bbox_center = int((box[0] + box[2]) / 2), int((box[1] + box[3]) / 2)
-                    crossed_before = track_id in region.counted_ids
-                    cls_name = self.model.names[track_class]
-
-                    if is_inside_zone(bbox_center, region.points) and not crossed_before:
-                        region.classwise_count[cls_name] += 1
-                        region.counted_ids[track_id] = VehicleID(cls_name, box)
-                    elif crossed_before:
-                        # Объект постоянно попадает из изчезает из зоны
-                        # TODO: Придумать способ окончательно перестать отслеживать объект
-                        region.counted_ids.pop(track_id, None)
-
-        if draw_regions:
-            for region in self.regions:
+    def draw_regions(self, im0):
+        for region in self.regions:
                 for i in range(len(region.points)):
                     cv2.line(
                         im0,
@@ -76,3 +52,4 @@ class RegionCounter:
                         (0, 255, 0),
                         thickness=2,
                     )
+            

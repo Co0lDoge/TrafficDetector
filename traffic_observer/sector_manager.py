@@ -8,6 +8,11 @@ from funcs import *
 from traffic_observer.period import Period
 from traffic_observer.step_timer import StepTimer
 from traffic_observer.regions_counter import RegionCounter
+from traffic_observer.detector import Detector
+
+from ultralytics import YOLO
+from ultralytics.utils.plotting import Annotator
+
 
 class Sector:
     def __init__(self, vehicle_classes):
@@ -22,59 +27,86 @@ class Sector:
 class SectorManager:
     def __init__(
             self,
-            length: int,  # Длина сектора в километрах
+            length: int,  
             lane_count: int,
             max_speed: int,
             vehicle_classes: Sequence[str],
             time_step: int,
-            observation_time: int, # Время наблюдения в секундах
+            observation_time: int,
             vechicle_size_coeffs: dict[str, float],
-            region_counter: RegionCounter
+            lanes: List,
+            regions: List,
+            imgsize: tuple,
+            model_path:str
     ):
         self.size_coeffs = vechicle_size_coeffs
         self.vehicle_classes = vehicle_classes
         self.length = length
         self.lane_count = lane_count
-        self.num_sectors = len(region_counter.regions)//2  # Каждому сектору соответствует два региона
-        self.region_counter = region_counter
+        self.num_sectors = len(regions)//2  
         self.observation_period = observation_time
         self.period_timer = StepTimer(time_step)
+        model = YOLO(model_path)
+        self.class_names=model.names
 
+        self.detector = Detector(model, imgsize)
+        #self.lane_counter = LaneCounter(lane_points=lanes, class_names=model.names)
+        self.region_counter = RegionCounter(regions_points=regions, class_names=model.names)
         self.sectors = [Sector(self.vehicle_classes) for _ in range(self.num_sectors)]
 
+
+    def __annotate(self, im0, annotator, box, track_id, cls):
+        annotator.box_label(box, "", color=(255, 0, 0))
+
+
     def update(self, frame: cv2.typing.MatLike):
-        self.region_counter.count(frame, annotate=True)
+        boxes, track_ids, classes = self.detector.track(frame)
+
+        # Обновление задержки линий
+        #self.lane_counter.update(self.period_timer.step)
+        #self.lane_counter.draw_line_info(frame)
+
+        # Обработка детекций
+        annotator = Annotator(frame, line_width=1, example=str(self.class_names))
+        for box, track_id, track_class in zip(boxes, track_ids, classes):
+            self.region_counter.count_tracklet(box, track_id, track_class)
+            #self.lane_counter.count_tracklet(frame, box, track_id, track_class, draw_lanes=True)
+            
+            self.__annotate(frame, annotator, box, track_id, track_class)
+            self.region_counter.draw_regions(frame)
+        
         logging.info(f"Обработан кадр по времени {self.period_timer.time}")
 
+        # Обновление таймера и периода
         self.period_timer.step_forward()
         if self.period_timer.time >= self.observation_period:
             self.new_period()
 
-        # Итерация по секторам и регионам, каждому сектору соответствует два региона
+        # Итерация по секторам и регионам
+        self.iterate_through_regions()
+
+        logging.info(f"Обновлены сектора по времени {self.period_timer.time}")
+
+    def iterate_through_regions(self):
         for i in range(self.num_sectors):
             start_counter = self.region_counter.regions[2 * i]
             end_counter = self.region_counter.regions[2 * i + 1]
             sector = self.sectors[i]
 
-            # Сохранение времени проезда для всего транспорта, перешедшего конечный регион
-            for vid in start_counter.counted_ids:
-                if vid not in sector.ids_start_time and vid not in sector.ids_blacklist:
-                    sector.ids_start_time[vid] = self.period_timer.unresettable_time
+            for vehicle_id in start_counter.counted_ids:
+                if vehicle_id not in sector.ids_start_time and vehicle_id not in sector.ids_blacklist:
+                    sector.ids_start_time[vehicle_id] = self.period_timer.unresettable_time
 
-            # Обновление времени начала движения для всего транспорта перешедшего начальный регион
-            for vid in end_counter.counted_ids:
-                if vid not in sector.ids_blacklist and vid in sector.ids_start_time:
-                    dt = self.period_timer.unresettable_time - sector.ids_start_time[vid]
-                    sector.ids_start_time.pop(vid)
+            for vehicle_id in end_counter.counted_ids:
+                if vehicle_id not in sector.ids_blacklist and vehicle_id in sector.ids_start_time:
+                    dt = self.period_timer.unresettable_time - sector.ids_start_time[vehicle_id]
+                    sector.ids_start_time.pop(vehicle_id)
 
-                    sector.ids_travel_time[vid] = dt
+                    sector.ids_travel_time[vehicle_id] = dt
 
-                    class_name = end_counter.counted_ids[vid].class_name
+                    class_name = end_counter.counted_ids[vehicle_id].class_name
                     sector.classwise_traveled_count[class_name] += 1
-                    sector.ids_blacklist.add(vid)
-                    
-            
-        logging.info(f"Обновлены сектора по времени {self.period_timer.time}")
+                    sector.ids_blacklist.add(vehicle_id)
 
     def new_period(self):
         for sector in self.sectors:

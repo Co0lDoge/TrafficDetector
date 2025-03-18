@@ -5,8 +5,7 @@ import logging
 from data_loader.args_loader import load_args, get_adapted_region_points
 from data_loader.video_loader import open_video
 from data_manager.traffic_report import create_stats_report
-from traffic_observer.sector import SectorManager
-from traffic_observer.regions_counter import RegionCounter
+from traffic_observer.sector_manager import SectorManager
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,17 +29,18 @@ fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 output = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
 regions = get_adapted_region_points(list_region, video_width, width)
-
-counter = RegionCounter(model_path, regions_points=regions, imgsz=(height, width))
 sector_manager = SectorManager(
     settings["sector-length"],
-    settings["lane-count"],
+    settings["lane-count"], # TODO: lane rework for each sector
     settings["max-speed"],
     settings["vehicle-classes"],
     1/fps,
     settings["observation-time"],
     settings["vehicle-size-coeffs"],
-    counter
+    lanes = [], # TODO: replace with non-placeholder
+    regions = regions,
+    imgsize = [height, width],
+    model_path = model_path
 )
 
 # Начало обработки видео

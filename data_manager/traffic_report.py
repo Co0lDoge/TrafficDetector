@@ -1,6 +1,6 @@
 import pandas as pd
 from pandas.io.excel import ExcelWriter
-from traffic_observer.sector import SectorManager
+from traffic_observer.sector_manager import SectorManager
 import logging
 
 def create_stats_report(sector_cluster: SectorManager, report_path: str):
