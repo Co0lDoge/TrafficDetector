@@ -1,10 +1,11 @@
 model
 video
 output
+__test
 __test_model
 __test_video
 __test_output
-__run.py
+__test_region
 
 __pycache__
 .venv
