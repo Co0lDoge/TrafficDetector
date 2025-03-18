@@ -4,12 +4,6 @@ import numpy as np
 def is_inside_zone(center, zone):
     return cv2.pointPolygonTest(np.array(zone, dtype=np.int32), center, False) >= 0
 
-
-def _annotate(im0, annotator, box, track_id, cls):
-    annotator.box_label(box, "", color=(255, 0, 0))
-    bbox_center = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2  # Bbox center
-
-
 class VehicleID:
     def __init__(self, class_name: str, bb):
         self.class_name = class_name
