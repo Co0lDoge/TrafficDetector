@@ -28,25 +28,21 @@ class DataConstructor:
 
         with open("settings.toml", "rb") as f:
             settings = tomllib.load(f)
-        logging.info(f"Загруженные настройки: {settings}")
-
-        cap, fps = open_video(video_path)
+            logging.info(f"Загруженные настройки: {settings}")
+        
+        cap, fps = open_video(self.__video_path)
         video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        width, height = settings["target-width"], settings["target-height"]
+        required_width, required_height = settings["target-width"], settings["target-height"]
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        output = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        output = cv2.VideoWriter(self.__output_path, fourcc, fps, (required_width, required_height))
         
         # parse sector
-        data_sectors = self.__load_sectors(sector_path)
+        data_sectors = self.__load_sectors()
+        data_sectors = self.__adapt_sectors_points(data_sectors, video_width, required_width)
 
-        # adapt sector's region points
-        data_sectors = self.__get_adapted_regions_of_sector(data_sectors, video_width, width)
-        
-        # sector = self.__get_adapted_region_points(list_region, video_width, width)
-
-    def __load_sectors(self, sector_data) -> list[DataSector]:
-        with open(sector_data, "r", encoding="utf-8") as file:
+    def __load_sectors(self) -> list[DataSector]:
+        with open(self.__sector_path, "r", encoding="utf-8") as file:
             data = json.load(file)  
 
         sectors = []
@@ -61,21 +57,20 @@ class DataConstructor:
             
             # Creating Sector object
             sector_object = DataSector(sector_id, start_points, end_points, lanes_points, lanes_count, sector_length, max_speed)
-            
-            # Appending the sector object to the sectors list
             sectors.append(sector_object)
+        
         return sectors
     
-    def __get_adapted_regions_of_sector(self, data_sectors, video_width, required_width) -> list[list[int]]:
+    def __adapt_sectors_points(self, data_sectors, video_width, required_width) -> list[list[int]]:
         # Адаптирует список точек региона к необходимому разрешению
         coeff = video_width / required_width
 
         for sector in data_sectors:
-            sector.start_points = self._adapt_resolution_points(sector.start_points, coeff)
-            sector.end_points = self._adapt_resolution_points(sector.end_points, coeff)
+            sector.start_points = self.__adapt_resolution_points(sector.start_points, coeff)
+            sector.end_points = self.__adapt_resolution_points(sector.end_points, coeff)
             for lane in sector.lanes_points:
-                lane = self._adapt_resolution_points(lane, coeff)
+                lane = self.__adapt_resolution_points(lane, coeff)
 
-    def _adapt_resolution_points(self, points: list[int], coef) -> list[int]:
+    def __adapt_resolution_points(self, points: list[int], coef) -> list[int]:
         # Преобразование к int, так как openCV не берет float
         return (np.array(points) / coef).astype(int).tolist()
