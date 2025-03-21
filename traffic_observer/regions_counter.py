@@ -31,7 +31,8 @@ class RegionCounter:
             if crossed_before:
                 # Объект постоянно попадает из изчезает из зоны
                 # TODO: придумать способ окончательно перестать отслеживать объект
-                region.counted_ids.pop(track_id, None)
+                # region.counted_ids.pop(track_id, None)
+                pass
             elif is_inside_zone(bbox_center, region.points):
                 region.classwise_count[cls_name] += 1
                 region.counted_ids[track_id] = VehicleID(cls_name, box)

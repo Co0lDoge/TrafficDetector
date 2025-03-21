@@ -53,8 +53,25 @@ while cap.isOpened():
     frame = cv2.resize(frame, (width, height))
     sector_manager.update(frame)
 
+    cv2.putText(
+        frame,
+        f"{sector_manager.sectors[0].classwise_traveled_count}",
+        (10, 200),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        (255, 255, 255)
+    )
+    cv2.putText(
+        frame,
+        f"Current period timer: {int(sector_manager.period_timer.time)}",
+        (10, 230),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        (255, 255, 255)
+    )
+
     # Показ текущего кадра
-    cv2.imshow("frame", frame)
+    cv2.imshow('frame', frame)
     output.write(frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):

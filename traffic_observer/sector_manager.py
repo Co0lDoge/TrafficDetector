@@ -1,4 +1,4 @@
-from typing import Sequence, List
+from typing import Sequence, List, Callable
 
 import pandas as pd
 import cv2
@@ -9,6 +9,7 @@ from traffic_observer.period import Period
 from traffic_observer.step_timer import StepTimer
 from traffic_observer.regions_counter import RegionCounter
 from traffic_observer.detector import Detector
+from traffic_observer.regions_counter import Region
 
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
@@ -55,8 +56,29 @@ class SectorManager:
         self.sectors = [Sector(self.vehicle_classes) for _ in range(self.num_sectors)]
 
 
-    def __annotate(self, im0, annotator, box, track_id, cls):
-        annotator.box_label(box, "", color=(255, 0, 0))
+    def __annotate(self, frame, annotator, box, track_id, track_class, regions: List['Region'], get_vehicle_travel_time: Callable[[int], float]):
+        visited = None
+        region_start: Region = regions[0]
+        region_end: Region = regions[1]
+
+        label = ""
+        color=(50, 0, 0)
+        label = f'ID {track_id}"'
+        if track_id in region_start.counted_ids:
+            color=(255, 0, 0)
+            visited = "start"
+        if track_id in region_end.counted_ids and visited == "start":
+            color = (0, 150, 100)
+            visited = "end"
+        elif track_id in region_end.counted_ids:
+            color = (0, 0, 255)
+            visited = "end error"
+        if visited is not None:
+            travel_time = get_vehicle_travel_time(track_id)
+            time = f"{travel_time:.2f}" if travel_time is not None else None
+            label = f'ID {track_id} | {visited} | {time}"'
+
+        annotator.box_label(box, label, color)
 
 
     def update(self, frame: cv2.typing.MatLike):
@@ -72,7 +94,7 @@ class SectorManager:
             self.region_counter.count_tracklet(box, track_id, track_class)
             #self.lane_counter.count_tracklet(frame, box, track_id, track_class, draw_lanes=True)
             
-            self.__annotate(frame, annotator, box, track_id, track_class)
+            self.__annotate(frame, annotator, box, track_id, track_class, self.region_counter.regions, self.travel_time)
             self.region_counter.draw_regions(frame)
         
         logging.info(f"Обработан кадр по времени {self.period_timer.time}")
@@ -165,3 +187,11 @@ class SectorManager:
             dataframes.append(pd.DataFrame(stats))
 
         return dataframes
+    
+    def travel_time(self, vehicle_id: int) -> float:
+        for sector in self.sectors:
+            if vehicle_id in sector.ids_start_time:
+                return self.period_timer.unresettable_time - sector.ids_start_time[vehicle_id]
+            elif vehicle_id in sector.ids_travel_time:
+                return sector.ids_travel_time[vehicle_id]
+        return None
