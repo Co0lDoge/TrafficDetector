@@ -8,16 +8,23 @@ from data_loader.args_loader import load_args
 from data_loader.video_loader import open_video
 
 class DataSector:
-    def __init__(self, sector_id, start_points, end_points, lanes_points, lanes_count):
+    def __init__(self, sector_id, start_points, end_points, lanes_points, lanes_count, sector_length, max_speed):
         self.id = sector_id
         self.start_points = start_points
         self.end_points = end_points
         self.lanes_points = lanes_points
         self.lanes_count = lanes_count
+        self.sector_length = sector_length
+        self.max_speed = max_speed
 
 class DataConstructor:
     def __init__(self):
         video_path, model_path, output_path, report_path, sector_path = load_args()
+        self.__video_path = video_path
+        self.__model_path = model_path
+        self.__output_path = output_path
+        self.__report_path = report_path
+        self.__sector_path = sector_path
 
         with open("settings.toml", "rb") as f:
             settings = tomllib.load(f)
@@ -49,9 +56,11 @@ class DataConstructor:
             end_points = sector["region_end"]["coords"]
             lanes_points = [lane["coords"] for lane in sector["lanes"]]
             lanes_count = sector["lanes_count"]
+            sector_length = sector["sector_length"]
+            max_speed = sector["max_speed"]
             
             # Creating Sector object
-            sector_object = DataSector(sector_id, start_points, end_points, lanes_points, lanes_count)
+            sector_object = DataSector(sector_id, start_points, end_points, lanes_points, lanes_count, sector_length, max_speed)
             
             # Appending the sector object to the sectors list
             sectors.append(sector_object)
