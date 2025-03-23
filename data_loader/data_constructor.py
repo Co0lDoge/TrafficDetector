@@ -53,6 +53,9 @@ class DataConstructor:
             [self.settings.target_height, self.settings.target_width],
             self.__model_path
         )
+    
+    def get_output_paths(self) -> tuple[str, str]:
+        return self.__report_path, self.__output_path
 
     def __load_sectors(self) -> list[DataSector]:
         with open(self.__sector_path, "r", encoding="utf-8") as file:

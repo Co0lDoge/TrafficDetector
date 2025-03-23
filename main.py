@@ -34,15 +34,18 @@ while cap.isOpened():
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# sector_manager.new_period()
-# logging.info("Обработка видео завершена.")
+report_path, output_path  = dataConstructor.get_output_paths()
 
-# # Создание отчёта
-# create_stats_report(sector_manager, report_path)
+# Освобождаем ресурсы
+sector_manager.new_period()
+logging.info("Обработка видео завершена.")
 
-# # Освобождаем ресурсы
-# cap.release()
-# output.release()
-# cv2.destroyAllWindows()
+# Сохранение видеофайла
+cap.release()
+output.release()
+cv2.destroyAllWindows()
 
-# logging.info(f"Видеофайл сохранён в {output_path}")
+logging.info(f"Видеофайл сохранён в {output_path}")
+
+# Создание отчёта
+create_stats_report(sector_manager, report_path)

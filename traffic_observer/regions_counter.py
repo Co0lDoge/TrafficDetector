@@ -6,12 +6,11 @@ def is_inside_zone(center, zone):
 
 class VehicleID:
     def __init__(self, class_name: str, bb):
-        self.class_name = class_name
+        self.track_class = class_name
         self.bb = bb
 
-
 class Region:
-    def __init__(self, points, class_names):
+    def __init__(self, points):
         self.points = points
         self.counted_ids: dict[int, VehicleID] = {}
 
@@ -26,7 +25,6 @@ class Region:
         elif is_inside_zone(bbox_center, self.points):
             self.counted_ids[track_id] = VehicleID(track_class, box)
             
-
     def draw_regions(self, im0):
         for i in range(len(self.points)):
             cv2.line(

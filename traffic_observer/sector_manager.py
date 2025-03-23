@@ -16,8 +16,8 @@ from ultralytics.utils.plotting import Annotator
 
 class Sector:
     def __init__(self, data_sector: DataSector, vehicle_classes):
-        self.start_region: Region = Region(data_sector.start_points, vehicle_classes)
-        self.end_region: Region = Region(data_sector.end_points, vehicle_classes)
+        self.start_region: Region = Region(data_sector.start_points)
+        self.end_region: Region = Region(data_sector.end_points)
         self.lanes = data_sector.lanes_points
         self.lanes_count = data_sector.lanes_count
         self.length = data_sector.sector_length
@@ -28,7 +28,6 @@ class Sector:
         self.ids_start_time = {}
         self.ids_blacklist = set()
         self.travelling_ids = {}
-
 
 class SectorManager:
     def __init__(
@@ -57,10 +56,6 @@ class SectorManager:
 
     def update(self, frame: cv2.typing.MatLike):
         boxes, track_ids, classes = self.detector.track(frame)
-
-        # Обновление задержки линий
-        #self.lane_counter.update(self.period_timer.step)
-        #self.lane_counter.draw_line_info(frame)
 
         # Обработка детекций
         annotator = Annotator(frame, line_width=1, example=str(self.class_names))
@@ -102,7 +97,8 @@ class SectorManager:
 
                     sector.ids_travel_time[vehicle_id] = dt
 
-                    class_name = end_counter.counted_ids[vehicle_id].class_name
+                    track_class = end_counter.counted_ids[vehicle_id].track_class
+                    class_name = self.class_names[track_class]
                     sector.classwise_traveled_count[class_name] += 1
                     sector.ids_blacklist.add(vehicle_id)
 
@@ -137,15 +133,15 @@ class SectorManager:
 
                 vehicles_travel_time = period.ids_travel_time.values()
                 stats["Среднее время проезда"].append(mean_travel_time(vehicles_travel_time))
-                stats["Средняя скорость движения"].append(mean_vehicle_speed(vehicles_travel_time, self.length))
+                stats["Средняя скорость движения"].append(mean_vehicle_speed(vehicles_travel_time, sector.length))
 
                 stats["Плотность траффика"].append(traffic_density(
                     period.classwise_traveled_count,
                     self.size_coeffs,
                     vehicles_travel_time,
-                    self.length,
+                    sector.length,
                     period.observation_time,
-                    lane_count=self.lane_count
+                    lane_count=sector.lanes_count
                 ))
 
                 stats["Время наблюдения"].append(period.observation_time)
