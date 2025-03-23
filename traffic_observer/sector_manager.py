@@ -7,7 +7,7 @@ import logging
 from funcs import *
 from traffic_observer.period import Period
 from traffic_observer.step_timer import StepTimer
-from traffic_observer.regions_counter import Region
+from traffic_observer.region import Region
 from traffic_observer.detector import Detector
 
 from data_loader.data_sector import DataSector
