@@ -25,21 +25,19 @@ class DataConstructor:
         self.__output_path = output_path
         self.__report_path = report_path
         self.__sector_path = sector_path
-
         with open("settings.toml", "rb") as f:
-            settings = tomllib.load(f)
-            logging.info(f"Загруженные настройки: {settings}")
+            self.settings = tomllib.load(f)
+            logging.info(f"Загруженные настройки: {self.settings}")
         
         cap, fps = open_video(self.__video_path)
         video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        required_width, required_height = settings["target-width"], settings["target-height"]
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        output = cv2.VideoWriter(self.__output_path, fourcc, fps, (required_width, required_height))
+        output = cv2.VideoWriter(self.__output_path, fourcc, fps, (self.settings["target-width"], self.settings["target-height"]))
         
         # parse sector
         data_sectors = self.__load_sectors()
-        data_sectors = self.__adapt_sectors_points(data_sectors, video_width, required_width)
+        data_sectors = self.__adapt_sectors_points(data_sectors, video_width, self.settings["target-width"])
 
     def __load_sectors(self) -> list[DataSector]:
         with open(self.__sector_path, "r", encoding="utf-8") as file:
