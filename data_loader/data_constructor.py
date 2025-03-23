@@ -6,6 +6,19 @@ import json
 
 from data_loader.args_loader import load_args
 from data_loader.video_loader import open_video
+from traffic_observer.sector_manager import SectorManager
+
+class Settings:
+    def __init__(self):
+        with open("settings.toml", "rb") as f:
+            toml_settings = tomllib.load(f)
+            logging.info(f"Загруженные настройки: {toml_settings}")
+
+        self.observation_time = toml_settings["observation-time"]
+        self.target_width = toml_settings["target-width"]
+        self.target_height = toml_settings["target-height"]
+        self.vehicle_classes = toml_settings["vehicle-classes"]
+        self.vehicle_size_coeffs = toml_settings["vehicle-size-coeffs"]
 
 class DataSector:
     def __init__(self, sector_id, start_points, end_points, lanes_points, lanes_count, sector_length, max_speed):
@@ -25,19 +38,23 @@ class DataConstructor:
         self.__output_path = output_path
         self.__report_path = report_path
         self.__sector_path = sector_path
-        with open("settings.toml", "rb") as f:
-            self.settings = tomllib.load(f)
-            logging.info(f"Загруженные настройки: {self.settings}")
-        
-        cap, fps = open_video(self.__video_path)
-        video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.settings = Settings()
 
+    def get_video(self) -> tuple[cv2.VideoCapture, cv2.VideoWriter]:
+        cap, fps = open_video(self.__video_path)
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        output = cv2.VideoWriter(self.__output_path, fourcc, fps, (self.settings["target-width"], self.settings["target-height"]))
-        
-        # parse sector
+        output = cv2.VideoWriter(self.__output_path, fourcc, fps, (self.settings.target_width, self.settings.target_height))
+        return cap, output
+    
+    def get_sector_manager(self):
+        temp_cap, _ = open_video(self.__video_path)
+        video_width = int(temp_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         data_sectors = self.__load_sectors()
-        data_sectors = self.__adapt_sectors_points(data_sectors, video_width, self.settings["target-width"])
+        adapted_data_sectors = self.__adapt_sectors_points(data_sectors, video_width, self.settings.target_width)
+
+        return SectorManager(
+            adapted_data_sectors
+        )
 
     def __load_sectors(self) -> list[DataSector]:
         with open(self.__sector_path, "r", encoding="utf-8") as file:
