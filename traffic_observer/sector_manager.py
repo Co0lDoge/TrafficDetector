@@ -7,15 +7,21 @@ import logging
 from funcs import *
 from traffic_observer.period import Period
 from traffic_observer.step_timer import StepTimer
-from traffic_observer.regions_counter import RegionCounter
+from traffic_observer.regions_counter import Region
 from traffic_observer.detector import Detector
 
+from data_loader.data_sector import DataSector
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
 
-
 class Sector:
-    def __init__(self, vehicle_classes):
+    def __init__(self, data_sector: DataSector, vehicle_classes):
+        self.start_region: Region = Region(data_sector.start_points, vehicle_classes)
+        self.end_region: Region = Region(data_sector.end_points, vehicle_classes)
+        self.lanes = data_sector.lanes_points
+        self.lanes_count = data_sector.lanes_count
+        self.length = data_sector.sector_length
+        self.max_speed = data_sector.max_speed
         self.periods_data: List[Period] = []
         self.ids_travel_time = {}
         self.classwise_traveled_count = {class_name: 0 for class_name in vehicle_classes}
@@ -27,33 +33,23 @@ class Sector:
 class SectorManager:
     def __init__(
             self,
-            length: int,  
-            lane_count: int,
-            max_speed: int,
+            data_sectors: list[DataSector],
             vehicle_classes: Sequence[str],
             time_step: int,
             observation_time: int,
             vechicle_size_coeffs: dict[str, float],
-            lanes: List,
-            regions: List,
             imgsize: tuple,
             model_path:str
     ):
         self.size_coeffs = vechicle_size_coeffs
         self.vehicle_classes = vehicle_classes
-        self.length = length
-        self.lane_count = lane_count
-        self.num_sectors = len(regions)//2  
         self.observation_period = observation_time
         self.period_timer = StepTimer(time_step)
         model = YOLO(model_path)
         self.class_names=model.names
 
         self.detector = Detector(model, imgsize)
-        #self.lane_counter = LaneCounter(lane_points=lanes, class_names=model.names)
-        self.region_counter = RegionCounter(regions_points=regions, class_names=model.names)
-        self.sectors = [Sector(self.vehicle_classes) for _ in range(self.num_sectors)]
-
+        self.sectors = [Sector(data_sector, self.vehicle_classes) for data_sector in data_sectors]
 
     def __annotate(self, im0, annotator, box, track_id, cls):
         annotator.box_label(box, "", color=(255, 0, 0))
@@ -69,11 +65,14 @@ class SectorManager:
         # Обработка детекций
         annotator = Annotator(frame, line_width=1, example=str(self.class_names))
         for box, track_id, track_class in zip(boxes, track_ids, classes):
-            self.region_counter.count_tracklet(box, track_id, track_class)
-            #self.lane_counter.count_tracklet(frame, box, track_id, track_class, draw_lanes=True)
+            for sector in self.sectors:
+                # TODO: make method for those
+                sector.start_region.count_tracklet(box, track_id, track_class)
+                sector.end_region.count_tracklet(box, track_id, track_class)
+                sector.start_region.draw_regions(frame)
+                sector.end_region.draw_regions(frame)
             
             self.__annotate(frame, annotator, box, track_id, track_class)
-            self.region_counter.draw_regions(frame)
         
         logging.info(f"Обработан кадр по времени {self.period_timer.time}")
 
@@ -88,10 +87,9 @@ class SectorManager:
         logging.info(f"Обновлены сектора по времени {self.period_timer.time}")
 
     def iterate_through_regions(self):
-        for i in range(self.num_sectors):
-            start_counter = self.region_counter.regions[2 * i]
-            end_counter = self.region_counter.regions[2 * i + 1]
-            sector = self.sectors[i]
+        for sector in self.sectors:
+            start_counter = sector.start_region
+            end_counter = sector.end_region
 
             for vehicle_id in start_counter.counted_ids:
                 if vehicle_id not in sector.ids_start_time and vehicle_id not in sector.ids_blacklist:
