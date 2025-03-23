@@ -1,12 +1,8 @@
 import cv2
-import tomllib
 import logging
 
-from data_loader.args_loader import load_args, get_adapted_region_points
-from data_loader.video_loader import open_video
 from data_manager.traffic_report import create_stats_report
-from traffic_observer.sector import SectorManager
-from traffic_observer.regions_counter import RegionCounter
+from data_loader.data_constructor import DataConstructor
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,32 +12,10 @@ logging.basicConfig(
     ]
 )
 
-video_path, model_path, output_path, report_path, list_region = load_args()
-
-with open("settings.toml", "rb") as f:
-    settings = tomllib.load(f)
-logging.info(f"Загруженные настройки: {settings}")
-
-cap, fps = open_video(video_path)
-video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-width, height = settings["target-width"], settings["target-height"]
-
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-output = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-
-regions = get_adapted_region_points(list_region, video_width, width)
-
-counter = RegionCounter(model_path, regions_points=regions, imgsz=(height, width))
-sector_manager = SectorManager(
-    settings["sector-length"],
-    settings["lane-count"],
-    settings["max-speed"],
-    settings["vehicle-classes"],
-    1/fps,
-    settings["observation-time"],
-    settings["vehicle-size-coeffs"],
-    counter
-)
+dataConstructor = DataConstructor()
+cap, output = dataConstructor.get_video()
+sector_manager = dataConstructor.get_sector_manager()
+settings = dataConstructor.settings
 
 # Начало обработки видео
 logging.info("Начало обработки видео...")
@@ -50,24 +24,28 @@ while cap.isOpened():
     if not ret:
         break
 
-    frame = cv2.resize(frame, (width, height))
+    frame = cv2.resize(frame, (settings.target_width, settings.target_height))
     sector_manager.update(frame)
 
     # Показ текущего кадра
+    cv2.imshow("frame", frame)
     output.write(frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+report_path, output_path  = dataConstructor.get_output_paths()
+
+# Освобождаем ресурсы
 sector_manager.new_period()
 logging.info("Обработка видео завершена.")
 
-# Создание отчёта
-create_stats_report(sector_manager, report_path)
-
-# Освобождаем ресурсы
+# Сохранение видеофайла
 cap.release()
 output.release()
 cv2.destroyAllWindows()
 
 logging.info(f"Видеофайл сохранён в {output_path}")
+
+# Создание отчёта
+create_stats_report(sector_manager, report_path)
