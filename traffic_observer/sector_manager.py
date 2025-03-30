@@ -107,6 +107,13 @@ class SectorManager:
         self.__iterate_through_regions()
 
         # Обработка линий
+        self.__update_lanes(boxes, track_ids)
+
+        logging.info(f"Обновлены сектора по времени {self.period_timer.time}")
+
+    def __update_lanes(self, boxes, track_ids):
+        # Update delay and tracklet intersections for each line in each sector
+        # Must be called after __iterate_through_regions as it relies on the data formed in it
         for sector in self.sectors:
             for lane in sector.lanes:
                 lane.delay += self.period_timer.step
@@ -114,9 +121,8 @@ class SectorManager:
                     if vehicle_id in track_ids:
                         lane.count_tracklet(boxes[track_ids.index(vehicle_id)], vehicle_id)
 
-        logging.info(f"Обновлены сектора по времени {self.period_timer.time}")
-
     def __iterate_through_regions(self):
+        # Iterate through all sectors and regions to update travel times and vehicle tracking status
         for sector in self.sectors:
             start_counter = sector.start_region
             end_counter = sector.end_region
@@ -138,6 +144,7 @@ class SectorManager:
                     sector.ids_blacklist.add(vehicle_id)
 
     def new_period(self):
+        # Reset the period timer and store the data for each sector
         for sector in self.sectors:
             sector.periods_data.append(Period(
                 sector.ids_travel_time.copy(),
@@ -200,6 +207,7 @@ class SectorManager:
         return dataframes
 
     def __get_vehicle_travel_time(self, vehicle_id: int) -> float:
+        # Get travel time for a vehicle by its ID
         for sector in self.sectors:
             if vehicle_id in sector.ids_start_time:
                 return self.period_timer.unresettable_time - sector.ids_start_time[vehicle_id]
