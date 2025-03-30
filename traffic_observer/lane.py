@@ -19,7 +19,7 @@ class Lane:
             self.counted_ids.add(track_id)
             if self.delay > 10:
                 self.delay_list.append(self.delay)
-                self.delay = 0
+            self.delay = 0
             
     def draw_lane(self, im0):
         for i in range(len(self.points)):

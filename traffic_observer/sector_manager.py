@@ -1,4 +1,4 @@
-from typing import Sequence, List
+from typing import Sequence, List, Callable
 
 import pandas as pd
 import cv2
@@ -28,7 +28,6 @@ class Sector:
         self.classwise_traveled_count = {class_name: 0 for class_name in vehicle_classes}
         self.ids_start_time = {}
         self.ids_blacklist = set()
-        self.travelling_ids = {}
 
 class SectorManager:
     def __init__(
@@ -54,6 +53,28 @@ class SectorManager:
     def __annotate(self, im0, annotator, box, track_id, cls):
         annotator.box_label(box, "", color=(255, 0, 0))
 
+    def __annotate_debug(self, frame, annotator, box, track_id, track_class, sector: Sector, get_vehicle_travel_time: Callable[[int], float]):
+        visited = None
+
+        label = ""
+        color=(50, 0, 0)
+        label = f'ID {track_id}"'
+        if track_id in sector.ids_start_time:
+            color=(255, 0, 0)
+            visited = "start"
+        if track_id in sector.ids_travel_time:
+            color = (0, 150, 100)
+            visited = "end"
+        elif track_id in sector.end_region.counted_ids:
+            color = (0, 0, 255)
+            visited = "end error"
+        if visited is not None:
+            travel_time = get_vehicle_travel_time(track_id)
+            time = f"{travel_time:.2f}" if travel_time is not None else None
+            label = f'ID {track_id} | {visited} | {time}"'
+
+        annotator.box_label(box, label, color)
+
 
     def update(self, frame: cv2.typing.MatLike):
         boxes, track_ids, classes = self.detector.track(frame)
@@ -63,6 +84,8 @@ class SectorManager:
         for box, track_id, track_class in zip(boxes, track_ids, classes):
             for sector in self.sectors:
                 # TODO: make method for those
+                # TODO optimize: count tracket only for start regions
+                # if tracklet is not tracked in sector, then only in end region
                 sector.start_region.count_tracklet(box, track_id, track_class)
                 sector.end_region.count_tracklet(box, track_id, track_class)
                 sector.start_region.draw_regions(frame)
@@ -71,6 +94,7 @@ class SectorManager:
                     lane.draw_lane(frame)
             
             self.__annotate(frame, annotator, box, track_id, track_class)
+            #self.__annotate_debug(frame, annotator, box, track_id, track_class, sector, self.__get_vehicle_travel_time)
  
         logging.info(f"Обработан кадр по времени {self.period_timer.time}")
 
@@ -80,18 +104,19 @@ class SectorManager:
             self.new_period()
 
         # Итерация по секторам и регионам
-        self.iterate_through_regions()
+        self.__iterate_through_regions()
 
         # Обработка линий
         for sector in self.sectors:
             for lane in sector.lanes:
                 lane.delay += self.period_timer.step
-                for vehicle_id in sector.travelling_ids:
-                    lane.count_tracklet(sector.travelling_ids[vehicle_id], vehicle_id)
+                for vehicle_id in sector.ids_start_time.keys():
+                    if vehicle_id in track_ids:
+                        lane.count_tracklet(boxes[track_ids.index(vehicle_id)], vehicle_id)
 
         logging.info(f"Обновлены сектора по времени {self.period_timer.time}")
 
-    def iterate_through_regions(self):
+    def __iterate_through_regions(self):
         for sector in self.sectors:
             start_counter = sector.start_region
             end_counter = sector.end_region
@@ -173,3 +198,11 @@ class SectorManager:
             dataframes.append(pd.DataFrame(stats))
 
         return dataframes
+
+    def __get_vehicle_travel_time(self, vehicle_id: int) -> float:
+        for sector in self.sectors:
+            if vehicle_id in sector.ids_start_time:
+                return self.period_timer.unresettable_time - sector.ids_start_time[vehicle_id]
+            elif vehicle_id in sector.ids_travel_time:
+                return sector.ids_travel_time[vehicle_id]
+        return None
