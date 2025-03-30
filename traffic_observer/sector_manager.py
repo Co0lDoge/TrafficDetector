@@ -9,6 +9,7 @@ from traffic_observer.period import Period
 from traffic_observer.step_timer import StepTimer
 from traffic_observer.region import Region
 from traffic_observer.detector import Detector
+from traffic_observer.lane import Lane
 
 from data_loader.data_sector import DataSector
 from ultralytics import YOLO
@@ -18,10 +19,10 @@ class Sector:
     def __init__(self, data_sector: DataSector, vehicle_classes):
         self.start_region: Region = Region(data_sector.start_points)
         self.end_region: Region = Region(data_sector.end_points)
-        self.lanes = data_sector.lanes_points
-        self.lanes_count = data_sector.lanes_count
-        self.length = data_sector.sector_length
-        self.max_speed = data_sector.max_speed
+        self.lanes: list[Lane] = [Lane(lane_points) for lane_points in data_sector.lanes_points]
+        self.lanes_count: int = data_sector.lanes_count
+        self.length: int = data_sector.sector_length
+        self.max_speed: int = data_sector.max_speed
         self.periods_data: List[Period] = []
         self.ids_travel_time = {}
         self.classwise_traveled_count = {class_name: 0 for class_name in vehicle_classes}
@@ -66,9 +67,11 @@ class SectorManager:
                 sector.end_region.count_tracklet(box, track_id, track_class)
                 sector.start_region.draw_regions(frame)
                 sector.end_region.draw_regions(frame)
+                for lane in sector.lanes:
+                    lane.draw_lane(frame)
             
             self.__annotate(frame, annotator, box, track_id, track_class)
-        
+ 
         logging.info(f"Обработан кадр по времени {self.period_timer.time}")
 
         # Обновление таймера и периода
@@ -78,6 +81,13 @@ class SectorManager:
 
         # Итерация по секторам и регионам
         self.iterate_through_regions()
+
+        # Обработка линий
+        for sector in self.sectors:
+            for lane in sector.lanes:
+                lane.delay += self.period_timer.step
+                for vehicle_id in sector.travelling_ids:
+                    lane.count_tracklet(sector.travelling_ids[vehicle_id], vehicle_id)
 
         logging.info(f"Обновлены сектора по времени {self.period_timer.time}")
 
