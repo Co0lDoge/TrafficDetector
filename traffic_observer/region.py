@@ -18,11 +18,7 @@ class Region:
         bbox_center = int((box[0] + box[2]) / 2), int((box[1] + box[3]) / 2)
         crossed_before = track_id in self.counted_ids
 
-        if crossed_before:
-            # Объект постоянно попадает из изчезает из зоны
-            # TODO: придумать способ окончательно перестать отслеживать объект
-            self.counted_ids.pop(track_id, None)
-        elif is_inside_zone(bbox_center, self.points):
+        if not crossed_before and is_inside_zone(bbox_center, self.points):
             self.counted_ids[track_id] = VehicleID(track_class, box)
             
     def draw_regions(self, im0):

@@ -114,6 +114,10 @@ class SectorManager:
             sector.classwise_traveled_count = {class_name: 0 for class_name in self.vehicle_classes}
         self.period_timer.reset()
 
+        for region in self.sectors: # TODO: use another more frequently called method for long periods of time
+            region.start_region.counted_ids.clear()
+            region.end_region.counted_ids.clear()
+
     def traffic_stats(self) -> List[pd.DataFrame]:
         dataframes = []
         for sector in self.sectors:
