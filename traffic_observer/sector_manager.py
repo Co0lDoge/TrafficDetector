@@ -18,7 +18,6 @@ from ultralytics.utils.plotting import Annotator
 class Sector:
     def __init__(self, data_sector: DataSector, vehicle_classes):
         self.start_region: Region = Region(data_sector.start_points)
-        self.end_region: Region = Region(data_sector.end_points)
         self.lanes: list[Lane] = [Lane(lane_points) for lane_points in data_sector.lanes_points]
         self.lanes_count: int = data_sector.lanes_count
         self.length: int = data_sector.sector_length
@@ -65,9 +64,6 @@ class SectorManager:
         if track_id in sector.ids_travel_time:
             color = (0, 150, 100)
             visited = "end"
-        elif track_id in sector.end_region.counted_ids:
-            color = (0, 0, 255)
-            visited = "end error"
         if visited is not None:
             travel_time = get_vehicle_travel_time(track_id)
             time = f"{travel_time:.2f}" if travel_time is not None else None
@@ -87,14 +83,12 @@ class SectorManager:
                 # TODO optimize: count tracket only for start regions
                 # if tracklet is not tracked in sector, then only in end region
                 sector.start_region.count_tracklet(box, track_id, track_class)
-                sector.end_region.count_tracklet(box, track_id, track_class)
                 sector.start_region.draw_regions(frame)
-                sector.end_region.draw_regions(frame)
                 for lane in sector.lanes:
                     lane.draw_lane(frame)
             
-            self.__annotate(frame, annotator, box, track_id, track_class)
-            #self.__annotate_debug(frame, annotator, box, track_id, track_class, sector, self.__get_vehicle_travel_time)
+            #self.__annotate(frame, annotator, box, track_id, track_class)
+            self.__annotate_debug(frame, annotator, box, track_id, track_class, sector, self.__get_vehicle_travel_time_debug)
  
         logging.info(f"Обработан кадр по времени {self.period_timer.time}")
 
@@ -108,6 +102,9 @@ class SectorManager:
 
         # Обработка линий
         self.__update_lanes(boxes, track_ids)
+
+        # Итерация по линиям
+        self.__iterate_through_lanes(classes, track_ids)
 
         logging.info(f"Обновлены сектора по времени {self.period_timer.time}")
 
@@ -125,23 +122,26 @@ class SectorManager:
         # Iterate through all sectors and regions to update travel times and vehicle tracking status
         for sector in self.sectors:
             start_counter = sector.start_region
-            end_counter = sector.end_region
 
             for vehicle_id in start_counter.counted_ids:
                 if vehicle_id not in sector.ids_start_time and vehicle_id not in sector.ids_blacklist:
                     sector.ids_start_time[vehicle_id] = self.period_timer.unresettable_time
+        
+    def __iterate_through_lanes(self, classes, track_ids):
+        for sector in self.sectors:
+            for lane in sector.lanes:
+                for vehicle_id in lane.counted_ids:
+                    if vehicle_id not in sector.ids_blacklist and vehicle_id in sector.ids_start_time:
+                        dt = self.period_timer.unresettable_time - sector.ids_start_time[vehicle_id]
+                        sector.ids_start_time.pop(vehicle_id)
 
-            for vehicle_id in end_counter.counted_ids:
-                if vehicle_id not in sector.ids_blacklist and vehicle_id in sector.ids_start_time:
-                    dt = self.period_timer.unresettable_time - sector.ids_start_time[vehicle_id]
-                    sector.ids_start_time.pop(vehicle_id)
+                        sector.ids_travel_time[vehicle_id] = dt
 
-                    sector.ids_travel_time[vehicle_id] = dt
-
-                    track_class = end_counter.counted_ids[vehicle_id].track_class
-                    class_name = self.class_names[track_class]
-                    sector.classwise_traveled_count[class_name] += 1
-                    sector.ids_blacklist.add(vehicle_id)
+                        track_class = classes[track_ids.index(vehicle_id)]
+                        class_name = self.class_names[track_class]
+                        sector.classwise_traveled_count[class_name] += 1
+                        sector.ids_blacklist.add(vehicle_id)
+                    
 
     def new_period(self):
         # Reset the period timer and store the data for each sector
@@ -158,7 +158,6 @@ class SectorManager:
 
         for region in self.sectors: # TODO: use another more frequently called method for long periods of time
             region.start_region.counted_ids.clear()
-            region.end_region.counted_ids.clear()
 
     def traffic_stats(self) -> List[pd.DataFrame]:
         dataframes = []
@@ -206,7 +205,7 @@ class SectorManager:
 
         return dataframes
 
-    def __get_vehicle_travel_time(self, vehicle_id: int) -> float:
+    def __get_vehicle_travel_time_debug(self, vehicle_id: int) -> float:
         # Get travel time for a vehicle by its ID
         for sector in self.sectors:
             if vehicle_id in sector.ids_start_time:
