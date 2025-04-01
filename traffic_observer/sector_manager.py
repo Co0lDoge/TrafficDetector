@@ -140,8 +140,7 @@ class SectorManager:
                         track_class = classes[track_ids.index(vehicle_id)]
                         class_name = self.class_names[track_class]
                         sector.classwise_traveled_count[class_name] += 1
-                        sector.ids_blacklist.add(vehicle_id)
-                    
+                        sector.ids_blacklist.add(vehicle_id)         
 
     def new_period(self):
         # Reset the period timer and store the data for each sector
