@@ -148,6 +148,7 @@ class SectorManager:
             sector.periods_data.append(Period(
                 sector.ids_travel_time.copy(),
                 sector.classwise_traveled_count.copy(),
+                [lane.delay_list.copy() for lane in sector.lanes],
                 self.period_timer.time
             ))
 
@@ -155,9 +156,12 @@ class SectorManager:
             sector.classwise_traveled_count = {class_name: 0 for class_name in self.vehicle_classes}
         self.period_timer.reset()
 
-        for region in self.sectors: # TODO: use another more frequently called method for long periods of time
-            region.start_region.counted_ids.clear()
-
+        for sector in self.sectors: # TODO: use another more frequently called method for long periods of time
+            sector.start_region.counted_ids.clear()
+            for lane in sector.lanes:
+                lane.counted_ids.clear()
+                lane.delay_list.clear()
+            
     def traffic_stats(self) -> List[pd.DataFrame]:
         dataframes = []
         for sector in self.sectors:
@@ -166,6 +170,7 @@ class SectorManager:
                 "Среднее время проезда": [],
                 "Средняя скорость движения": [],
                 "Плотность траффика": [],
+                "Средняя задежкка": [],
                 "Время наблюдения": []
             }
             for period in sector.periods_data:
@@ -186,6 +191,11 @@ class SectorManager:
                     sector.length,
                     period.observation_time,
                     lane_count=sector.lanes_count
+                ))
+
+                stats["Средняя задежкка"].append(mean_vehicle_delay(
+                    period.delay_list,
+                    period.classwise_traveled_count
                 ))
 
                 stats["Время наблюдения"].append(period.observation_time)

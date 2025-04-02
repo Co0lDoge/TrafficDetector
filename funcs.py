@@ -1,5 +1,6 @@
 import statistics
 from typing import Iterable
+from traffic_observer.lane import Lane
 
 Hours = float
 Percents = float
@@ -47,6 +48,16 @@ def mean_vehicle_speed(
     ''' Средняя скорость движения транспортных средств (3 пункт) '''
 
     return sector_length / mean_travel_time(vehicles_travel_time)
+
+def mean_vehicle_delay(
+    lane_delays: list[list[int]],
+    classwise_traveled_count: list[int]
+):
+    total_vehicle_count = sum(classwise_traveled_count.values())
+    if total_vehicle_count != 0:
+        return sum([sum(delay) for delay in lane_delays]) / total_vehicle_count
+    else: 
+        return "No vehicle passed"
 
 
 def traffic_density(
