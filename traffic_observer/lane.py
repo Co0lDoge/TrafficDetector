@@ -8,7 +8,6 @@ class Lane:
     def __init__(self, points):
         self.points = points
         self.delay = 0
-        self.delay_list = []
         self.counted_ids = set()
 
     def count_tracklet(self, box, track_id):
@@ -17,9 +16,6 @@ class Lane:
 
         if not crossed_before and is_inside_zone(bbox_center, self.points):
             self.counted_ids.add(track_id)
-            if self.delay > 10:
-                self.delay_list.append(self.delay)
-            self.delay = 0
             
     def draw_lane(self, im0):
         for i in range(len(self.points)):

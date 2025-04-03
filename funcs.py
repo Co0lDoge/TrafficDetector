@@ -49,22 +49,27 @@ def mean_vehicle_speed(
 
     return sector_length / mean_travel_time(vehicles_travel_time)
 
+def mean_free_time(vehicles_free_time: Iterable[Seconds|float]) -> Hours:
+    try:
+        return statistics.mean(vehicles_free_time) / SECS_IN_HOUR
+    except statistics.StatisticsError:
+        return float("nan")
+
 def mean_vehicle_delay(
-    lane_delays: list[list[float]],
-    classwise_traveled_count: list[int]
-):
-    total_vehicle_count = sum(classwise_traveled_count.values())
-    if total_vehicle_count != 0:
-        return sum([sum(delay) for delay in lane_delays]) / total_vehicle_count
-    else: 
-        return 0
+    vehicles_travel_time: list[list[float]],
+    vehicles_free_time: list[int]
+) -> Hours:
+    return mean_travel_time(vehicles_travel_time) - mean_free_time(vehicles_free_time)
     
 def time_index(
-    mean_vehicle_speed: float,
-    mean_vehicle_delay: float
+    vehicles_travel_time: list[list[float]],
+    vehicles_free_time: list[int]
 ):
-    return mean_vehicle_speed/(mean_vehicle_speed-mean_vehicle_delay)
-    
+    free_time = mean_free_time(vehicles_free_time)
+    if free_time != 0:
+        return mean_travel_time(vehicles_travel_time)/mean_free_time(vehicles_free_time)
+    else:
+        return float("nan")
 
 def traffic_density(
     classwise_traveled_count: dict[str, Seconds],

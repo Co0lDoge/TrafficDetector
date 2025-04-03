@@ -24,6 +24,7 @@ class Sector:
         self.max_speed: int = data_sector.max_speed
         self.periods_data: List[Period] = []
         self.ids_travel_time = {}
+        self.ids_free_time = {}
         self.classwise_traveled_count = {class_name: 0 for class_name in vehicle_classes}
         self.ids_start_time = {}
         self.ids_blacklist = set()
@@ -137,6 +138,11 @@ class SectorManager:
 
                         sector.ids_travel_time[vehicle_id] = dt
 
+                        # Update free travel time
+                        if lane.delay < 10:
+                            sector.ids_free_time[vehicle_id] = dt
+                        lane.delay = 0
+
                         track_class = classes[track_ids.index(vehicle_id)]
                         class_name = self.class_names[track_class]
                         sector.classwise_traveled_count[class_name] += 1
@@ -148,11 +154,12 @@ class SectorManager:
             sector.periods_data.append(Period(
                 sector.ids_travel_time.copy(),
                 sector.classwise_traveled_count.copy(),
-                [lane.delay_list.copy() for lane in sector.lanes],
+                sector.ids_free_time.copy(),
                 self.period_timer.time
             ))
 
             sector.ids_travel_time.clear()
+            sector.ids_free_time.copy()
             sector.classwise_traveled_count = {class_name: 0 for class_name in self.vehicle_classes}
         self.period_timer.reset()
 
@@ -160,7 +167,6 @@ class SectorManager:
             sector.start_region.counted_ids.clear()
             for lane in sector.lanes:
                 lane.counted_ids.clear()
-                lane.delay_list.clear()
             
     def traffic_stats(self) -> List[pd.DataFrame]:
         dataframes = []
@@ -170,7 +176,8 @@ class SectorManager:
                 "Среднее время проезда сек": [],
                 "Средняя скорость движения км/ч": [],
                 "Плотность траффика": [],
-                "Средняя задежкка сек": [],
+                "Среднее своб. время сек": [],
+                "Средняя задержка сек": [],
                 "Временной индекс": [],
                 "Время наблюдения сек": []
             }
@@ -182,6 +189,7 @@ class SectorManager:
                 ))
 
                 vehicles_travel_time = period.ids_travel_time.values()
+                vehicles_free_time = period.free_travel_time.values()
                 stats["Среднее время проезда сек"].append(mean_travel_time(vehicles_travel_time)*SECS_IN_HOUR)
                 stats["Средняя скорость движения км/ч"].append(mean_vehicle_speed(vehicles_travel_time, sector.length))
 
@@ -194,16 +202,16 @@ class SectorManager:
                     lane_count=sector.lanes_count
                 ))
 
-                stats["Средняя задежкка сек"].append(mean_vehicle_delay(
-                    period.delay_list,
-                    period.classwise_traveled_count
-                ))
+                stats["Среднее своб. время сек"].append(mean_free_time(
+                    vehicles_free_time
+                )*SECS_IN_HOUR)
+                stats["Средняя задержка сек"].append(mean_vehicle_delay(
+                    vehicles_travel_time,
+                    vehicles_free_time
+                )*SECS_IN_HOUR)
                 stats["Временной индекс"].append(time_index(
-                    mean_vehicle_speed(vehicles_travel_time, sector.length),
-                    mean_vehicle_delay(
-                        period.delay_list,
-                        period.classwise_traveled_count
-                )
+                    vehicles_travel_time,
+                    vehicles_free_time
                 ))
 
                 stats["Время наблюдения сек"].append(period.observation_time)
