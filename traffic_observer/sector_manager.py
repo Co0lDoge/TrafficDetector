@@ -167,11 +167,11 @@ class SectorManager:
         for sector in self.sectors:
             stats = {
                 "Интенсивность траффика": [],
-                "Среднее время проезда": [],
-                "Средняя скорость движения": [],
+                "Среднее время проезда сек": [],
+                "Средняя скорость движения км/ч": [],
                 "Плотность траффика": [],
-                "Средняя задежкка": [],
-                "Время наблюдения": []
+                "Средняя задежкка сек": [],
+                "Время наблюдения сек": []
             }
             for period in sector.periods_data:
                 stats["Интенсивность траффика"].append(traffic_intensity(
@@ -181,8 +181,8 @@ class SectorManager:
                 ))
 
                 vehicles_travel_time = period.ids_travel_time.values()
-                stats["Среднее время проезда"].append(mean_travel_time(vehicles_travel_time))
-                stats["Средняя скорость движения"].append(mean_vehicle_speed(vehicles_travel_time, sector.length))
+                stats["Среднее время проезда сек"].append(mean_travel_time(vehicles_travel_time)*SECS_IN_HOUR)
+                stats["Средняя скорость движения км/ч"].append(mean_vehicle_speed(vehicles_travel_time, sector.length))
 
                 stats["Плотность траффика"].append(traffic_density(
                     period.classwise_traveled_count,
@@ -193,12 +193,12 @@ class SectorManager:
                     lane_count=sector.lanes_count
                 ))
 
-                stats["Средняя задежкка"].append(mean_vehicle_delay(
+                stats["Средняя задежкка сек"].append(mean_vehicle_delay(
                     period.delay_list,
                     period.classwise_traveled_count
                 ))
 
-                stats["Время наблюдения"].append(period.observation_time)
+                stats["Время наблюдения сек"].append(period.observation_time)
             dataframes.append(pd.DataFrame(stats))
 
         return dataframes
