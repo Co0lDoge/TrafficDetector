@@ -50,15 +50,21 @@ def mean_vehicle_speed(
     return sector_length / mean_travel_time(vehicles_travel_time)
 
 def mean_vehicle_delay(
-    lane_delays: list[list[int]],
+    lane_delays: list[list[float]],
     classwise_traveled_count: list[int]
 ):
     total_vehicle_count = sum(classwise_traveled_count.values())
     if total_vehicle_count != 0:
         return sum([sum(delay) for delay in lane_delays]) / total_vehicle_count
     else: 
-        return "No vehicle passed"
-
+        return 0
+    
+def time_index(
+    mean_vehicle_speed: float,
+    mean_vehicle_delay: float
+):
+    return mean_vehicle_speed/(mean_vehicle_speed-mean_vehicle_delay)
+    
 
 def traffic_density(
     classwise_traveled_count: dict[str, Seconds],

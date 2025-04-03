@@ -171,6 +171,7 @@ class SectorManager:
                 "Средняя скорость движения км/ч": [],
                 "Плотность траффика": [],
                 "Средняя задежкка сек": [],
+                "Временной индекс": [],
                 "Время наблюдения сек": []
             }
             for period in sector.periods_data:
@@ -196,6 +197,13 @@ class SectorManager:
                 stats["Средняя задежкка сек"].append(mean_vehicle_delay(
                     period.delay_list,
                     period.classwise_traveled_count
+                ))
+                stats["Временной индекс"].append(time_index(
+                    mean_vehicle_speed(vehicles_travel_time, sector.length),
+                    mean_vehicle_delay(
+                        period.delay_list,
+                        period.classwise_traveled_count
+                )
                 ))
 
                 stats["Время наблюдения сек"].append(period.observation_time)
