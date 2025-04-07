@@ -85,8 +85,7 @@ class DataConstructor:
         for sector in adapted_sectors:
             sector.start_points = self.__adapt_resolution_points(sector.start_points, coeff)
             sector.end_points = self.__adapt_resolution_points(sector.end_points, coeff)
-            for lane in sector.lanes_points:
-                lane = self.__adapt_resolution_points(lane, coeff)
+            sector.lanes_points = [self.__adapt_resolution_points(lane, coeff) for lane in sector.lanes_points]
         
         return adapted_sectors
 

@@ -1,5 +1,6 @@
 import statistics
 from typing import Iterable
+from traffic_observer.lane import Lane
 
 Hours = float
 Percents = float
@@ -48,6 +49,27 @@ def mean_vehicle_speed(
 
     return sector_length / mean_travel_time(vehicles_travel_time)
 
+def mean_free_time(vehicles_free_time: Iterable[Seconds|float]) -> Hours:
+    try:
+        return statistics.mean(vehicles_free_time) / SECS_IN_HOUR
+    except statistics.StatisticsError:
+        return float("nan")
+
+def mean_vehicle_delay(
+    vehicles_travel_time: list[list[float]],
+    vehicles_free_time: list[int]
+) -> Hours:
+    return mean_travel_time(vehicles_travel_time) - mean_free_time(vehicles_free_time)
+    
+def time_index(
+    vehicles_travel_time: list[list[float]],
+    vehicles_free_time: list[int]
+):
+    free_time = mean_free_time(vehicles_free_time)
+    if free_time != 0:
+        return mean_travel_time(vehicles_travel_time)/mean_free_time(vehicles_free_time)
+    else:
+        return float("nan")
 
 def traffic_density(
     classwise_traveled_count: dict[str, Seconds],
