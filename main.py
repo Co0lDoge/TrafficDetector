@@ -14,7 +14,7 @@ logging.basicConfig(
 
 dataConstructor = DataConstructor()
 cap, output = dataConstructor.get_video()
-sector_manager = dataConstructor.get_sector_manager()
+traffic_manager = dataConstructor.get_crossroad_manager()
 settings = dataConstructor.settings
 
 # Начало обработки видео
@@ -25,7 +25,7 @@ while cap.isOpened():
         break
 
     frame = cv2.resize(frame, (settings.target_width, settings.target_height))
-    sector_manager.update(frame)
+    traffic_manager.update(frame)
 
     # Показ текущего кадра
     cv2.imshow("frame", frame)
@@ -37,7 +37,7 @@ while cap.isOpened():
 report_path, output_path  = dataConstructor.get_output_paths()
 
 # Освобождаем ресурсы
-sector_manager.new_period()
+traffic_manager.new_period()
 logging.info("Обработка видео завершена.")
 
 # Сохранение видеофайла
@@ -48,4 +48,4 @@ cv2.destroyAllWindows()
 logging.info(f"Видеофайл сохранён в {output_path}")
 
 # Создание отчёта
-create_stats_report(sector_manager, report_path)
+create_stats_report(traffic_manager, report_path)
