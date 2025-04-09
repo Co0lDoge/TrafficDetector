@@ -1,17 +1,11 @@
-from typing import Sequence, List, Callable
-
-import pandas as pd
+from typing import Sequence
 import cv2
 import logging
 
 from funcs import *
-from traffic_observer.period import Period
 from traffic_observer.step_timer import StepTimer
 from traffic_observer.region import Region
 from traffic_observer.detector import Detector
-from traffic_observer.lane import Lane
-
-from data_loader.data_sector import DataSector
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
 
@@ -22,12 +16,20 @@ class TrackedVehicle:
         self.lane_id = lane_id
         self.start_delay = 0.0
         self.travel_time = 0.0
+        self.end_id = None 
 
 class Direction:
     def __init__(self, start_lanes, end_regions):
         self.start_lanes = [Region(points) for points in start_lanes]
         self.end_regions = [Region(points) for points in end_regions]
         self.tracked_vehicles: dict[int, TrackedVehicle] = {}
+
+class DataCollector:
+    def __init__(self):
+        self.collected_vehicles: list[TrackedVehicle] = []
+
+    def add_vehicle(self, vehicle: TrackedVehicle):
+        self.collected_vehicles.append(vehicle)
 
 class CrossroadManager:
     def __init__(
@@ -49,6 +51,7 @@ class CrossroadManager:
         self.class_names=model.names
 
         self.detector = Detector(model, imgsize)
+        self.datacollector = DataCollector()
         self.direction = Direction(start_lanes, end_regions)
 
     def __annotate_debug(self, annotator, box, track_id, track_class):
@@ -83,7 +86,8 @@ class CrossroadManager:
 
                 for region in self.direction.end_regions:
                     if region.is_intersected(box):
-                        # TODO: save vehicle data
+                        tracked_vehicle.end_id = self.direction.end_regions.index(region)
+                        self.datacollector.add_vehicle(tracked_vehicle)
                         self.direction.tracked_vehicles.pop(track_id)
                 continue
 

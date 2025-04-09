@@ -37,7 +37,6 @@ while cap.isOpened():
 report_path, output_path  = dataConstructor.get_output_paths()
 
 # Освобождаем ресурсы
-traffic_manager.new_period()
 logging.info("Обработка видео завершена.")
 
 # Сохранение видеофайла
@@ -48,4 +47,4 @@ cv2.destroyAllWindows()
 logging.info(f"Видеофайл сохранён в {output_path}")
 
 # Создание отчёта
-create_stats_report(traffic_manager, report_path)
+create_stats_report(traffic_manager.datacollector, report_path)

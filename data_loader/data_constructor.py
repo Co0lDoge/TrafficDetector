@@ -8,7 +8,6 @@ from data_loader.args_loader import load_args
 from data_loader.video_loader import open_video
 from data_loader.data_sector import DataSector
 from traffic_observer.crossroad_manager import CrossroadManager
-from traffic_observer.sector_manager import SectorManager
 
 class Settings:
     def __init__(self):
@@ -37,23 +36,6 @@ class DataConstructor:
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         output = cv2.VideoWriter(self.__output_path, fourcc, fps, (self.settings.target_width, self.settings.target_height))
         return cap, output
-    
-    def get_sector_manager(self):
-        temp_cap, fps = open_video(self.__video_path)
-        video_width = int(temp_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        data_sectors = self.__load_sectors()
-        adapted_data_sectors = self.__adapt_sectors_points(data_sectors, video_width, self.settings.target_width)
-
-        temp_cap.release()
-        return SectorManager(
-            adapted_data_sectors,
-            self.settings.vehicle_classes,
-            1/fps,
-            self.settings.observation_time,
-            self.settings.vehicle_size_coeffs,
-            [self.settings.target_height, self.settings.target_width],
-            self.__model_path
-        )
     
     def get_crossroad_manager(self):
         temp_cap, fps = open_video(self.__video_path)
@@ -88,6 +70,7 @@ class DataConstructor:
         return self.__report_path, self.__output_path
 
     def __load_sectors(self) -> list[DataSector]:
+        # TODO: fix for new format
         with open(self.__sector_path, "r", encoding="utf-8") as file:
             data = json.load(file)  
 
@@ -106,18 +89,6 @@ class DataConstructor:
             sectors.append(sector_object)
         
         return sectors
-    
-    def __adapt_sectors_points(self, data_sectors: list[DataSector], video_width, required_width) -> list[DataSector]:
-        # Адаптирует список точек региона к необходимому разрешению
-        adapted_sectors = data_sectors.copy()
-        coeff = video_width / required_width
-
-        for sector in adapted_sectors:
-            sector.start_points = self.__adapt_resolution_points(sector.start_points, coeff)
-            sector.end_points = self.__adapt_resolution_points(sector.end_points, coeff)
-            sector.lanes_points = [self.__adapt_resolution_points(lane, coeff) for lane in sector.lanes_points]
-        
-        return adapted_sectors
     
     def __adapt_list_points(self, data_sectors: list[list[int]], video_width, required_width) -> list[list[int]]:
         coeff = video_width / required_width
