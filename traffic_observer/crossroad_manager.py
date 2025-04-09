@@ -101,7 +101,7 @@ class CrossroadManager:
         for lane in self.direction.start_lanes:
             lane.draw_regions(frame)
         for lane in self.direction.end_regions:
-            lane.draw_regions(frame) # TODO: Change color to red
+            lane.draw_regions(frame, color = (0, 0, 255))
 
         logging.info("Frame processed")
 

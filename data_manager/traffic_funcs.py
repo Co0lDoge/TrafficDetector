@@ -1,6 +1,5 @@
 import statistics
 from typing import Iterable
-from traffic_observer.lane import Lane
 
 Hours = float
 Percents = float

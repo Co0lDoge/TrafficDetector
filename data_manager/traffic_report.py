@@ -4,46 +4,59 @@ from collections import defaultdict
 from traffic_observer.crossroad_manager import DataCollector
 
 def create_excel_report(datacollector: DataCollector, report_path: str):
+    # Group data by lane_id and end_id.
+    # Each vehicle contributes a tuple of (start_delay, travel_time)
     data_dict = defaultdict(lambda: defaultdict(list))
-    
     for vehicle in datacollector.collected_vehicles:
-        # Only include vehicles with a defined end_id
         if vehicle.end_id is not None:
             data_dict[vehicle.lane_id][vehicle.end_id].append((vehicle.start_delay, vehicle.travel_time))
     
-    # Get sorted unique lane and end values
+    # Determine sorted unique lanes and ends.
     lanes = sorted(data_dict.keys())
     ends = set()
     for lane in data_dict:
         ends.update(data_dict[lane].keys())
     ends = sorted(ends)
     
-    # Prepare a dictionary for DataFrame construction.
-    # Each key is a tuple (end, metric) and each value is the list of averages for the corresponding lane.
+    # Prepare a dictionary to hold data for DataFrame construction.
+    # For each end, we compute:
+    #  - the average start_delay (only including those values >= 10)
+    #  - the average travel_time (including all values)
+    #  - the vehicle count
     df_data = {}
     for end in ends:
         avg_start_delay = []
         avg_travel_time = []
+        vehicle_count = []
         for lane in lanes:
             values = data_dict[lane].get(end)
             if values:
-                # Compute averages if records exist.
-                delays = [v[0] for v in values]
+                # Filter out start_delay values < 10.
+                valid_delays = [v[0] for v in values if v[0] >= 10]
+                if valid_delays:
+                    avg_delay = sum(valid_delays) / len(valid_delays)
+                else:
+                    avg_delay = np.nan
+                # For travel_time, use all values.
                 times = [v[1] for v in values]
-                avg_delay = sum(delays) / len(delays)
                 avg_time = sum(times) / len(times)
+                count = len(values)
             else:
                 avg_delay = np.nan
                 avg_time = np.nan
+                count = np.nan
             avg_start_delay.append(avg_delay)
             avg_travel_time.append(avg_time)
+            vehicle_count.append(count)
+            
         df_data[(end, "start_delay")] = avg_start_delay
         df_data[(end, "travel_time")] = avg_travel_time
+        df_data[(end, "vehicle_count")] = vehicle_count
 
-    # Create a MultiIndex for columns. Top level are the end_ids and second level are the metrics.
+    # Build a MultiIndex for the columns: top-level for end_id, second-level for the metric.
     multi_columns = pd.MultiIndex.from_tuples(list(df_data.keys()), names=["end", ""])
     
-    # Create DataFrame from the prepared dictionary.
+    # Construct the DataFrame.
     df = pd.DataFrame(df_data, index=lanes)
     df.index.name = "lane"
     df = df.reindex(columns=multi_columns)
