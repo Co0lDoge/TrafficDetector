@@ -1,7 +1,7 @@
 import cv2
 import logging
 
-from data_manager.traffic_report import create_stats_report
+from data_manager.traffic_report import create_excel_report
 from data_loader.data_constructor import DataConstructor
 
 logging.basicConfig(
@@ -47,4 +47,4 @@ cv2.destroyAllWindows()
 logging.info(f"Видеофайл сохранён в {output_path}")
 
 # Создание отчёта
-create_stats_report(traffic_manager.datacollector, report_path)
+create_excel_report(traffic_manager.datacollector, report_path)

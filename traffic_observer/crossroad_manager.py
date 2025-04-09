@@ -2,7 +2,7 @@ from typing import Sequence
 import cv2
 import logging
 
-from funcs import *
+from data_manager.traffic_funcs import *
 from traffic_observer.step_timer import StepTimer
 from traffic_observer.region import Region
 from traffic_observer.detector import Detector
