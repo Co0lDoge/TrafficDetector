@@ -15,7 +15,7 @@ from data_loader.data_sector import DataSector
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
 
-class Sector:
+class Direction:
     def __init__(self, data_sector: DataSector, vehicle_classes):
         self.start_region: Region = Region(data_sector.start_points)
         self.lanes: list[Lane] = [Lane(lane_points) for lane_points in data_sector.lanes_points]
@@ -56,11 +56,13 @@ class CrossroadManager:
         annotator.box_label(box, "", color=(255, 0, 0))
 
     def __annotate_debug(self, frame, annotator, box, track_id, track_class):
-        visited = None
-
-        label = ""
         color=(50, 0, 0)
         label = f'ID {track_id}"'
+
+        for lane in self.start_lanes:
+            if track_id in lane.counted_ids.keys():
+                color=(255, 0, 0)
+                label = f'ID {track_id} | Lane: {self.start_lanes.index(lane)}"'
 
         annotator.box_label(box, label, color)
 
@@ -68,15 +70,27 @@ class CrossroadManager:
     def update(self, frame: cv2.typing.MatLike):
         boxes, track_ids, classes = self.detector.track(frame)
         
-        # Обработка детекций
+        # Поиск пересечений с началом пути
         annotator = Annotator(frame, line_width=1, example=str(self.class_names))
         for box, track_id, track_class in zip(boxes, track_ids, classes):
             self.__annotate_debug(frame, annotator, box, track_id, track_class)
             for lane in self.start_lanes:
                 lane.count_tracklet(box, track_id, track_class)
-                lane.draw_regions(frame)
-                
         
+        # Поиск пересечений отслеживаемого транспорта с концами пути
+        for lane in self.start_lanes:
+            for vehicle_id in lane.counted_ids.keys():
+                pass
+
+            
+
+        # Поиск пересечений с концом пути
+        # for track_id in region in all self.end_regions:
+        
+        for lane in self.start_lanes:
+            lane.draw_regions(frame)
+        for lane in self.end_regions:
+            lane.draw_regions(frame) # TODO: Change color to red
 
     def __get_vehicle_travel_time_debug(self, vehicle_id: int) -> float:
         # Get travel time for a vehicle by its ID
