@@ -1,5 +1,6 @@
 import pandas as pd
-import numpy as np
+import os
+import logging
 from traffic_observer.crossroad_manager import DataCollector
 
 def create_report_dataframe(datacollector: DataCollector):
@@ -70,6 +71,19 @@ def create_report_dataframe(datacollector: DataCollector):
 
     return df
 
+def create_report(datacollector: DataCollector, report_path: str):
+    _, ext = os.path.splitext(report_path)
+    ext = ext.lower()
+
+    if ext == ".json":
+        return create_json_report(datacollector, report_path)
+    elif ext == ".csv":
+        return create_csv_report(datacollector, report_path)
+    elif ext in [".xls", ".xlsx"]:
+        return create_excel_report(datacollector, report_path)
+    else:
+        logging.info(f"Unsupported report format: {ext}")
+
 def create_excel_report(datacollector: DataCollector, report_path: str):
     df = create_report_dataframe(datacollector)
     
@@ -77,7 +91,7 @@ def create_excel_report(datacollector: DataCollector, report_path: str):
     with pd.ExcelWriter(report_path, engine='openpyxl') as writer:
         df.to_excel(writer, sheet_name="Report")
     
-    print(f"Excel report generated: {report_path}")
+    logging.info(f"Excel report generated: {report_path}")
     return df
 
 def create_csv_report(datacollector: DataCollector, report_path: str):
@@ -86,13 +100,27 @@ def create_csv_report(datacollector: DataCollector, report_path: str):
     # Write the DataFrame to CSV.
     # Pandas will output the multi-index header in two rows.
     df.to_csv(report_path)
-    print(f"CSV report generated: {report_path}")
+    logging.info(f"CSV report generated: {report_path}")
     return df
 
 def create_json_report(datacollector: DataCollector, report_path: str):
     df = create_report_dataframe(datacollector)
 
-    # Write the DataFrame to JSON.
-    df.to_json(report_path)
-    print(f"CSV report generated: {report_path}")
-    return df
+    # Convert MultiIndex DataFrame into desired dict structure
+    result = {}
+    for col in df.columns:
+        end, metric = col
+        col_key = f"(end: {end}, '{metric}')"
+        result[col_key] = {}
+        for idx, value in df[col].items():
+            direction, lane = idx
+            row_key = f"(direction: {direction}, lane: {lane})"
+            result[col_key][row_key] = None if pd.isna(value) else float(value)
+
+    # Save as pretty JSON
+    import json
+    with open(report_path, "w") as f:
+        json.dump(result, f, indent=4)
+
+    (f"JSON report generated: {report_path}")
+    return result
