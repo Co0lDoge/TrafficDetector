@@ -19,12 +19,14 @@ class TrackedVehicle:
         self.end_id = None 
 
 class Direction:
-    def __init__(self, start_lanes, end_regions):
+    ''' Manages tracking of vehicles moving from one of the lines of direction '''
+    def __init__(self, start_lanes):
+        
         self.start_lanes = [Region(points) for points in start_lanes]
-        self.end_regions = [Region(points) for points in end_regions]
         self.tracked_vehicles: dict[int, TrackedVehicle] = {}
 
 class DataCollector:
+    ''' Saves the data of vehicles that passed the end region '''
     def __init__(self):
         self.collected_vehicles: list[TrackedVehicle] = []
 
@@ -32,6 +34,8 @@ class DataCollector:
         self.collected_vehicles.append(vehicle)
 
 class CrossroadManager:
+    ''' Manages the tracking of vehicles by directions 
+    from which they enter and where they exit '''
     def __init__(
             self,
             start_lanes: list[list[int]],
@@ -53,8 +57,9 @@ class CrossroadManager:
         self.detector = Detector(model, imgsize)
         self.datacollector = DataCollector()
         self.direction = Direction(start_lanes, end_regions)
+        self.end_regions = [Region(points) for points in end_regions]
 
-    def __annotate_debug(self, annotator, box, track_id, track_class):
+    def __annotate_debug(self, annotator, box, track_id):
         color=(50, 0, 0)
         #class_name = self.vehicle_classes[int(track_class)]
         
@@ -84,9 +89,9 @@ class CrossroadManager:
                 else:
                     tracked_vehicle.travel_time += self.period_timer.step
 
-                for region in self.direction.end_regions:
+                for region in self.end_regions:
                     if region.is_intersected(box):
-                        tracked_vehicle.end_id = self.direction.end_regions.index(region)
+                        tracked_vehicle.end_id = self.end_regions.index(region)
                         self.datacollector.add_vehicle(tracked_vehicle)
                         self.direction.tracked_vehicles.pop(track_id)
                 continue
@@ -100,7 +105,7 @@ class CrossroadManager:
         # Drawing region borders
         for lane in self.direction.start_lanes:
             lane.draw_regions(frame)
-        for lane in self.direction.end_regions:
+        for lane in self.end_regions:
             lane.draw_regions(frame, color = (0, 0, 255))
 
         logging.info("Frame processed")
