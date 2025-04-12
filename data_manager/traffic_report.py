@@ -3,7 +3,7 @@ import numpy as np
 from collections import defaultdict
 from traffic_observer.crossroad_manager import DataCollector
 
-def create_excel_report(datacollector: DataCollector, report_path: str):
+def create_report_dataframe(datacollector: DataCollector):
     # Group data by lane_id and end_id.
     # Each vehicle contributes a tuple of (start_delay, travel_time)
     data_dict = defaultdict(lambda: defaultdict(list))
@@ -60,10 +60,24 @@ def create_excel_report(datacollector: DataCollector, report_path: str):
     df = pd.DataFrame(df_data, index=lanes)
     df.index.name = "lane"
     df = df.reindex(columns=multi_columns)
+
+    return df
+
+def create_excel_report(datacollector: DataCollector, report_path: str):
+    df = create_report_dataframe(datacollector)
     
     # Write the DataFrame to an Excel file.
     with pd.ExcelWriter(report_path, engine='openpyxl') as writer:
         df.to_excel(writer, sheet_name="Report")
     
     print(f"Excel report generated: {report_path}")
+    return df
+
+def create_csv_report(datacollector: DataCollector, report_path: str):
+    df = create_report_dataframe(datacollector)
+
+    # Write the DataFrame to CSV.
+    # Pandas will output the multi-index header in two rows.
+    df.to_csv(report_path)
+    print(f"CSV report generated: {report_path}")
     return df
