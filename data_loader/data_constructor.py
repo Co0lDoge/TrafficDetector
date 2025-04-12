@@ -65,14 +65,13 @@ class DataConstructor:
         for sector in data["sectors"]:
             sector_id = sector["sector_id"]
             start_points = sector["region_start"]["coords"]
-            end_points = sector["region_end"]["coords"]
             lanes_points = [lane["coords"] for lane in sector["lanes"]]
             lanes_count = sector["lanes_count"]
             sector_length = sector["sector_length"]
             max_speed = sector["max_speed"]
             
             # Creating Sector object
-            sector_object = DataSector(sector_id, start_points, end_points, lanes_points, lanes_count, sector_length, max_speed)
+            sector_object = DataSector(sector_id, start_points, lanes_points, lanes_count, sector_length, max_speed)
             sectors.append(sector_object)
         
         return sectors
@@ -84,7 +83,6 @@ class DataConstructor:
 
         for sector in adapted_sectors:
             sector.start_points = self.__adapt_resolution_points(sector.start_points, coeff)
-            sector.end_points = self.__adapt_resolution_points(sector.end_points, coeff)
             sector.lanes_points = [self.__adapt_resolution_points(lane, coeff) for lane in sector.lanes_points]
         
         return adapted_sectors
