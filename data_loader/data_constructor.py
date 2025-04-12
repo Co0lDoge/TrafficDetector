@@ -2,11 +2,10 @@ import cv2
 import tomllib
 import logging
 import numpy as np
-import json
 
 from data_loader.args_loader import load_args
 from data_loader.video_loader import open_video
-from data_loader.data_sector import DataSector
+from data_loader.region_loader import load_json_region
 from traffic_observer.crossroad_manager import CrossroadManager
 
 class Settings:
@@ -41,43 +40,10 @@ class DataConstructor:
         temp_cap, fps = open_video(self.__video_path)
         video_width = int(temp_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
-        direction_1 = self.__adapt_list_points([
-            [[904,1934],[1500,1500],[1542,1544],[938,1988]],
-            [[1538,1546],[1580,1598],[986,2054],[940,1994]],
-            [[1580,1604],[1634,1664],[1030,2128],[986,2054]],
-            [[1632,1668],[1684,1730],[1154,2146],[1032,2130]],
-            [[1684,1730],[1744,1802],[1336,2144],[1154,2146]],
-        ], video_width, self.settings.target_width)
-
-        direction_2 = self.__adapt_list_points([
-            [[3210,2058],[2582,1448],[2640,1404],[3268,1996]],
-            [[3272,1994],[3316,1946],[2710,1354],[2642,1408]],
-            [[3320,1944],[3386,1862],[2782,1296],[2712,1356]],
-        ], video_width, self.settings.target_width)
-
-        direction_3 = self.__adapt_list_points([
-            [[2312,584],[2858,216],[2906,288],[2378,642]],
-            [[2380,642],[2912,292],[2936,310],[2416,672]],
-            [[2938,312],[2980,346],[2470,714],[2416,678]],
-            [[2982,348],[3030,386],[2518,756],[2468,716]],
-        ], video_width, self.settings.target_width)
-
-        direction_4 = self.__adapt_list_points([
-            [[1386,736],[1438,696],[818,10],[754,46]],
-            [[1446,696],[1510,666],[888,2],[818,10]],
-            [[888,0],[956,0],[1564,628],[1514,666]],
-            [[1564,624],[1624,604],[1038,0],[962,0]]
-        ], video_width, self.settings.target_width)
-
-        end_regions = self.__adapt_list_points([
-            [[1488,438],[1616,572],[1824,452],[1714,338]],
-            [[2552,798],[2810,972],[2976,886],[2700,692]],
-            [[2524,1766],[2680,1610],[2920,1828],[2744,1992]],
-            [[1518,1482],[1332,1242],[1100,1386],[1292,1648]]
-        ], video_width, self.settings.target_width)
+        directions, end_regions = self.get_adapted_regions(video_width, self.settings.target_width)
 
         return CrossroadManager(
-            [direction_1, direction_2, direction_3, direction_4],
+            directions,
             end_regions,
             self.settings.vehicle_classes,
             1/fps,
@@ -89,27 +55,29 @@ class DataConstructor:
     
     def get_output_paths(self) -> tuple[str, str]:
         return self.__report_path, self.__output_path
+    
+    def get_adapted_regions(self, video_width, target_width):
+        regions_data = load_json_region(self.__sector_path)
 
-    def __load_sectors(self) -> list[DataSector]:
-        # TODO: fix for new format
-        with open(self.__sector_path, "r", encoding="utf-8") as file:
-            data = json.load(file)  
-
-        sectors = []
-        for sector in data["sectors"]:
-            sector_id = sector["sector_id"]
-            start_points = sector["region_start"]["coords"]
-            end_points = sector["region_end"]["coords"]
-            lanes_points = [lane["coords"] for lane in sector["lanes"]]
-            lanes_count = sector["lanes_count"]
-            sector_length = sector["sector_length"]
-            max_speed = sector["max_speed"]
-            
-            # Creating Sector object
-            sector_object = DataSector(sector_id, start_points, end_points, lanes_points, lanes_count, sector_length, max_speed)
-            sectors.append(sector_object)
+        # Process directions.
+        directions_processed = []
+        for direction in regions_data.get('directions', []):
+            adapted_direction = self.__adapt_list_points(direction, video_width, target_width)
+            directions_processed.append(adapted_direction)
         
-        return sectors
+        # Process end_region.
+        end_region_data = regions_data.get('end_region')
+        if end_region_data:
+            adapted_end_region = self.__adapt_list_points(end_region_data, video_width, target_width)
+        else:
+            adapted_end_region = None
+            logging.info("No end_region found in JSON.")
+
+        return [
+            directions_processed,
+            adapted_end_region
+        ]
+
     
     def __adapt_list_points(self, data_sectors: list[list[int]], video_width, required_width) -> list[list[int]]:
         coeff = video_width / required_width
@@ -120,7 +88,6 @@ class DataConstructor:
         ]
         
         return adapted_points
-
 
     def __adapt_resolution_points(self, points: list[int], coef) -> list[int]:
         # Преобразование к int, так как openCV не берет float
