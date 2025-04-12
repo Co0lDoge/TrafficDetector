@@ -56,10 +56,10 @@ class CrossroadManager:
 
         self.detector = Detector(model, imgsize)
         self.datacollector = DataCollector()
-        self.direction = Direction(start_lanes, end_regions)
+        self.direction = Direction(start_lanes)
         self.end_regions = [Region(points) for points in end_regions]
 
-    def __annotate_debug(self, annotator, box, track_id):
+    def __annotate_debug(self, annotator, box, track_id, track_class):
         color=(50, 0, 0)
         #class_name = self.vehicle_classes[int(track_class)]
         
