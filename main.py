@@ -16,6 +16,7 @@ dataConstructor = DataConstructor()
 cap, output = dataConstructor.get_video()
 traffic_manager = dataConstructor.get_crossroad_manager()
 settings = dataConstructor.settings
+# TODO: add check for report format before script execution
 
 # Начало обработки видео
 logging.info("Начало обработки видео...")
@@ -47,4 +48,4 @@ cv2.destroyAllWindows()
 logging.info(f"Видеофайл сохранён в {output_path}")
 
 # Создание отчёта
-report_manager.create_excel_report(traffic_manager.datacollector, report_path)
+report_manager.create_report(traffic_manager.datacollector, report_path)
