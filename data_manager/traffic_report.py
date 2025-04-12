@@ -88,3 +88,11 @@ def create_csv_report(datacollector: DataCollector, report_path: str):
     df.to_csv(report_path)
     print(f"CSV report generated: {report_path}")
     return df
+
+def create_json_report(datacollector: DataCollector, report_path: str):
+    df = create_report_dataframe(datacollector)
+
+    # Write the DataFrame to JSON.
+    df.to_json(report_path)
+    print(f"CSV report generated: {report_path}")
+    return df
