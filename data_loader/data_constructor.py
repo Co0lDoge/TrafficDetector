@@ -3,9 +3,9 @@ import tomllib
 import logging
 import numpy as np
 
-from data_loader.args_loader import load_args
-from data_loader.video_loader import open_video
-from data_loader.region_loader import load_json_region
+from data_loader.component.args_loader import load_args
+from data_loader.component.video_loader import open_video
+from data_loader.component.region_loader import load_json_region
 from traffic_observer.crossroad_manager import CrossroadManager
 
 class Settings:
@@ -21,14 +21,23 @@ class Settings:
         self.vehicle_size_coeffs = toml_settings["vehicle-size-coeffs"]
 
 class DataConstructor:
-    def __init__(self):
-        video_path, model_path, output_path, report_path, sector_path = load_args()
+    def __init__(self, video_path, model_path, output_path, report_path, sector_path):
         self.__video_path = video_path
         self.__model_path = model_path
         self.__output_path = output_path
         self.__report_path = report_path
         self.__sector_path = sector_path
         self.settings = Settings()
+
+    def from_args():
+        video_path, model_path, output_path, report_path, sector_path = load_args()
+        return DataConstructor(
+            video_path,
+            model_path,
+            output_path,
+            report_path,
+            sector_path
+        )
 
     def get_video(self) -> tuple[cv2.VideoCapture, cv2.VideoWriter]:
         cap, fps = open_video(self.__video_path)

@@ -1,7 +1,4 @@
-import time
-
 Secs = float
-
 
 class StepTimer:
     def __init__(self, step: Secs, start_time: Secs = 0):

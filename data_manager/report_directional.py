@@ -122,5 +122,5 @@ def create_json_report(datacollector: DataCollector, report_path: str):
     with open(report_path, "w") as f:
         json.dump(result, f, indent=4)
 
-    (f"JSON report generated: {report_path}")
+    logging.info(f"JSON report generated: {report_path}")
     return result

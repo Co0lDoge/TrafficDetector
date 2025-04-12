@@ -3,9 +3,9 @@ import cv2
 import logging
 
 from data_manager.traffic_funcs import *
-from traffic_observer.step_timer import StepTimer
-from traffic_observer.region import Region
-from traffic_observer.detector import Detector
+from traffic_observer.component.step_timer import StepTimer
+from traffic_observer.component.region import Region
+from traffic_observer.component.detector import Detector
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
 
