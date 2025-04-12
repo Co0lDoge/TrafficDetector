@@ -1,43 +1,47 @@
 import pandas as pd
 import numpy as np
-from collections import defaultdict
 from traffic_observer.crossroad_manager import DataCollector
 
 def create_report_dataframe(datacollector: DataCollector):
-    # Group data by lane_id and end_id.
-    # Each vehicle contributes a tuple of (start_delay, travel_time)
+    from collections import defaultdict
+    import pandas as pd
+    import numpy as np
+
+    # Group data by (direction_id, lane_id) and then by end_id.
+    # Each vehicle contributes a tuple: (start_delay, travel_time)
     data_dict = defaultdict(lambda: defaultdict(list))
     for vehicle in datacollector.collected_vehicles:
         if vehicle.end_id is not None:
-            data_dict[vehicle.lane_id][vehicle.end_id].append((vehicle.start_delay, vehicle.travel_time))
+            # Use a tuple key representing the start direction and lane.
+            key = (vehicle.direction_id, vehicle.lane_id)
+            data_dict[key][vehicle.end_id].append((vehicle.start_delay, vehicle.travel_time))
     
-    # Determine sorted unique lanes and ends.
-    lanes = sorted(data_dict.keys())
+    # Get a sorted list of the unique (direction_id, lane_id) keys.
+    index_keys = sorted(data_dict.keys())
+    
+    # Determine sorted unique end ids from all groups.
     ends = set()
-    for lane in data_dict:
-        ends.update(data_dict[lane].keys())
+    for key in data_dict:
+        ends.update(data_dict[key].keys())
     ends = sorted(ends)
     
-    # Prepare a dictionary to hold data for DataFrame construction.
-    # For each end, we compute:
-    #  - the average start_delay (only including those values >= 10)
-    #  - the average travel_time (including all values)
+    # Prepare a dictionary that will be used to build the DataFrame.
+    # For each end, calculate:
+    #  - the average start_delay (only including values >= 10)
+    #  - the average travel_time (using all values)
     #  - the vehicle count
     df_data = {}
     for end in ends:
         avg_start_delay = []
         avg_travel_time = []
         vehicle_count = []
-        for lane in lanes:
-            values = data_dict[lane].get(end)
+        for key in index_keys:
+            values = data_dict[key].get(end)
             if values:
-                # Filter out start_delay values < 10.
+                # Filter start_delay values less than 10.
                 valid_delays = [v[0] for v in values if v[0] >= 10]
-                if valid_delays:
-                    avg_delay = sum(valid_delays) / len(valid_delays)
-                else:
-                    avg_delay = np.nan
-                # For travel_time, use all values.
+                avg_delay = sum(valid_delays) / len(valid_delays) if valid_delays else np.nan
+                # For travel_time, include all values.
                 times = [v[1] for v in values]
                 avg_time = sum(times) / len(times)
                 count = len(values)
@@ -49,16 +53,19 @@ def create_report_dataframe(datacollector: DataCollector):
             avg_travel_time.append(avg_time)
             vehicle_count.append(count)
             
+        # For each end, store its three metrics.
         df_data[(end, "start_delay")] = avg_start_delay
         df_data[(end, "travel_time")] = avg_travel_time
         df_data[(end, "vehicle_count")] = vehicle_count
 
-    # Build a MultiIndex for the columns: top-level for end_id, second-level for the metric.
+    # Create a MultiIndex for the columns: top level will be end_id and the second level will be the metric.
     multi_columns = pd.MultiIndex.from_tuples(list(df_data.keys()), names=["end", ""])
     
-    # Construct the DataFrame.
-    df = pd.DataFrame(df_data, index=lanes)
-    df.index.name = "lane"
+    # Create a MultiIndex for the DataFrame rows from the (start_direction, lane) tuples.
+    index = pd.MultiIndex.from_tuples(index_keys, names=["start_direction", "lane"])
+    
+    # Construct the DataFrame and reindex using the constructed MultiIndexes.
+    df = pd.DataFrame(df_data, index=index)
     df = df.reindex(columns=multi_columns)
 
     return df
