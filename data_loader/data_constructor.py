@@ -41,7 +41,7 @@ class DataConstructor:
         temp_cap, fps = open_video(self.__video_path)
         video_width = int(temp_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
-        start_lanes = self.__adapt_list_points([
+        direction_1 = self.__adapt_list_points([
             [[904,1934],[1500,1500],[1542,1544],[938,1988]],
             [[1538,1546],[1580,1598],[986,2054],[940,1994]],
             [[1580,1604],[1634,1664],[1030,2128],[986,2054]],
@@ -49,14 +49,35 @@ class DataConstructor:
             [[1684,1730],[1744,1802],[1336,2144],[1154,2146]],
         ], video_width, self.settings.target_width)
 
+        direction_2 = self.__adapt_list_points([
+            [[3210,2058],[2582,1448],[2640,1404],[3268,1996]],
+            [[3272,1994],[3316,1946],[2710,1354],[2642,1408]],
+            [[3320,1944],[3386,1862],[2782,1296],[2712,1356]],
+        ], video_width, self.settings.target_width)
+
+        direction_3 = self.__adapt_list_points([
+            [[2312,584],[2858,216],[2906,288],[2378,642]],
+            [[2380,642],[2912,292],[2936,310],[2416,672]],
+            [[2938,312],[2980,346],[2470,714],[2416,678]],
+            [[2982,348],[3030,386],[2518,756],[2468,716]],
+        ], video_width, self.settings.target_width)
+
+        direction_4 = self.__adapt_list_points([
+            [[1386,736],[1438,696],[818,10],[754,46]],
+            [[1446,696],[1510,666],[888,2],[818,10]],
+            [[888,0],[956,0],[1564,628],[1514,666]],
+            [[1564,624],[1624,604],[1038,0],[962,0]]
+        ], video_width, self.settings.target_width)
+
         end_regions = self.__adapt_list_points([
-            [[1712,342],[1496,472],[1618,604],[1856,470]],
+            [[1488,438],[1616,572],[1824,452],[1714,338]],
             [[2552,798],[2810,972],[2976,886],[2700,692]],
             [[2524,1766],[2680,1610],[2920,1828],[2744,1992]],
+            [[1518,1482],[1332,1242],[1100,1386],[1292,1648]]
         ], video_width, self.settings.target_width)
 
         return CrossroadManager(
-            start_lanes,
+            [direction_1, direction_2, direction_3, direction_4],
             end_regions,
             self.settings.vehicle_classes,
             1/fps,
