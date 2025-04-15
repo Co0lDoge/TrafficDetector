@@ -32,13 +32,14 @@ directional_detect(
 
 ## Запуск в виде приложения
 ```sh
-python main.py 
+python directional_detector.py 
 --video-path video/test_720p.mp4 
 --model-path model/yolov8s_1280_720.pt 
 --output-path output/order-479.mp4 
 --report-path output/traffic-stats.xlsx 
---regions regions.json
+--sector_path regions.json
 ```
+
 ## При использовании модели OpenVINO путь необходимо указывать к директории со всеми файлами модели
 ```sh
 --model-path model/yolov10s_openvino_model/
