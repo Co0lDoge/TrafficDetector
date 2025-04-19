@@ -19,8 +19,8 @@ class TrackedVehicle:
         self.travel_time = 0.0
         self.end_id = None 
 
-class TrackerManager():
-    ''' Manages tracking of vehicles moving from start directions '''
+class TrackHolder():
+    ''' Holds tracked vehicles moving from start directions '''
     def __init__(self):
         self.tracked_vehicles: dict[int, TrackedVehicle] = {}
 
@@ -59,7 +59,7 @@ class CrossroadManager:
         self.class_names=model.names
 
         self.detector = Detector(model, imgsize)
-        self.tracker_manager = TrackerManager()
+        self.tracker_manager = TrackHolder()
         self.datacollector = DataCollector()
         self.start_directions = [Direction(lanes) for lanes in directions_lanes]
         self.end_regions = [Region(points) for points in end_regions]

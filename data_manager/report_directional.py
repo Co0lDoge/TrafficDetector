@@ -41,7 +41,8 @@ def create_report_dataframe(datacollector: DataCollector):
             if values:
                 # Filter start_delay values less than 10.
                 valid_delays = [v[0] for v in values if v[0] >= 10]
-                avg_delay = sum(valid_delays) / len(valid_delays) if valid_delays else np.nan
+                delays = [v[0] for v in values]
+                avg_delay = sum(delays) / len(values) if delays else np.nan
                 # For travel_time, include all values.
                 times = [v[1] for v in values]
                 avg_time = sum(times) / len(times)
