@@ -7,7 +7,7 @@ def load_args():
     parser.add_argument("--model-path", type=str, required=True, help="Путь к модельке")
     parser.add_argument("--output-path", type=str, required=True, help="Путь для выходного файлы")
     parser.add_argument("--report-path", type=str, required=True, help="Путь для выходного отчета")
-    parser.add_argument("--sector_path", type=str, required=True, help="Массив точек областей")
+    parser.add_argument("--sector-path", type=str, required=True, help="Массив точек областей")
 
     # Получение всех аргументов
     args = parser.parse_args()
